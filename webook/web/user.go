@@ -50,7 +50,7 @@ func (h *UserHandler) SignUp(context *gin.Context) {
 		return
 	}
 
-	context.String(http.StatusOK, "注册成功")
+	context.String(http.StatusOK, "注册成功11")
 
 	//context.String(http.StatusOK, "Hello, this is signup")
 }
