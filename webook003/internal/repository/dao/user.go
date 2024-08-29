@@ -31,6 +31,7 @@ func (dao *UserDAO) Insert(ctx context.Context, u User) error {
 	err := dao.db.WithContext(ctx).Create(&u).Error
 	var mysqlErr *mysql.MySQLError
 	if errors.As(err, &mysqlErr) {
+		//MySQL GO 驱动的 error定义的邮箱冲突错误
 		const uniqueConflictsErrNo uint16 = 1062
 		if mysqlErr.Number == uniqueConflictsErrNo {
 			// 邮箱冲突
