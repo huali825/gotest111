@@ -23,6 +23,7 @@ func NewUserService(repo *repository.UserRepository) *UserService {
 
 func (svc *UserService) SignUp(ctx context.Context, u domain.DMUser) error {
 	// 你要考虑加密放在哪里的问题了
+	//使用 BCrypt 加密
 	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
