@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"goworkwebook/webook/web"
+	"goworkwebook/webook003/ioc"
 	"log"
 	"strings"
 	"time"
@@ -11,6 +11,7 @@ import (
 
 func main() {
 	server := gin.Default()
+	db := ioc.InitDB()
 	server.Use(cors.New(cors.Config{
 		//AllowOrigins:     []string{"*"},
 		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"},
@@ -34,8 +35,8 @@ func main() {
 	//		"message": "pong",
 	//	})
 	//})
-	u := web.NewUserHandler(server)
-	u.RegisterRoutes()
+
+	ioc.InitWeb(server, db)
 
 	err := server.Run(":8080")
 	if err != nil {
