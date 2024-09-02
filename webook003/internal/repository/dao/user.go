@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 	"time"
@@ -10,7 +11,9 @@ import (
 
 var (
 	ErrUserDuplicateEmail = errors.New("邮箱冲突")
-	//ErrUserNotFound=gorm.ErrRecordNotFound
+
+	// errors.New("未找到用户")
+	ErrUserNotFound = gorm.ErrRecordNotFound
 )
 
 type UserDAO struct {
@@ -39,6 +42,13 @@ func (dao *UserDAO) Insert(ctx context.Context, u User) error {
 		}
 	}
 	return err
+}
+
+func (dao *UserDAO) FindByEmail(c *gin.Context, email string) (User, error) {
+	var user User
+	// 这里用domain.DMUser，因为domain.DMUser和User结构体字段完全一致
+	err := dao.db.WithContext(c).Where("email = ?", email).First(&user).Error
+	return user, err
 }
 
 // User 直接对应数据库表结构

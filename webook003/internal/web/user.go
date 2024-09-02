@@ -33,7 +33,7 @@ func (u *UserHandler) RegisterRoutes() {
 	u.s.POST("/users/signup", u.SignUp)
 	u.s.POST("/users/login", u.Login)
 	u.s.POST("/users/edit", u.Edit)
-	u.s.POST("/users/profile", u.Profile)
+	u.s.GET("/users/profile", u.Profile)
 
 }
 
@@ -73,7 +73,28 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 }
 
 func (u *UserHandler) Login(context *gin.Context) {
-	//TODO: implement
+	type LoginReq struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var req LoginReq
+	if err := context.ShouldBindJSON(&req); err != nil {
+		context.String(http.StatusOK, "系统错误")
+		return
+	}
+
+	err := u.svc.Login(context, req.Email, req.Password)
+	if errors.Is(err, service.ErrInvalidUserOrPassword) {
+		context.String(http.StatusOK, "用户名或密码错误")
+		return
+	}
+	if err != nil {
+		context.String(http.StatusOK, "系统错误")
+		return
+	}
+	context.String(http.StatusOK, "登录成功")
+	//登录成功干的事儿, 但是还没实现
+	return
 }
 
 func (u *UserHandler) Edit(context *gin.Context) {
@@ -81,7 +102,8 @@ func (u *UserHandler) Edit(context *gin.Context) {
 }
 
 func (u *UserHandler) Profile(context *gin.Context) {
-	//TODO: implement
+	context.String(http.StatusOK, "这是 profile")
+	return
 }
 
 // 检验邮箱密码格式

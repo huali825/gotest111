@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"goworkwebook/webook003/internal/domain"
 	"goworkwebook/webook003/internal/repository"
@@ -9,7 +11,7 @@ import (
 
 var ErrUserDuplicateEmail = repository.ErrUserDuplicateEmail
 
-//var ErrInvalidUserOrPassword = errors.New("账号/邮箱或密码不对")
+var ErrInvalidUserOrPassword = errors.New("账号/邮箱或密码不对")
 
 type UserService struct {
 	repo *repository.UserRepository
@@ -31,4 +33,20 @@ func (svc *UserService) SignUp(ctx context.Context, u domain.DMUser) error {
 	u.Password = string(hash)
 	// 然后就是，存起来
 	return svc.repo.Create(ctx, u)
+}
+
+func (svc *UserService) Login(c *gin.Context, email string, password string) error {
+	u, err := svc.repo.FindByMail(c, email)
+	if errors.Is(err, repository.ErrUserNotFound) {
+		return ErrInvalidUserOrPassword
+	}
+	if err != nil {
+		return err //系统错误 等会儿再来谈论
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	if err != nil {
+		// 密码错误
+		return ErrInvalidUserOrPassword
+	}
+	return err
 }
