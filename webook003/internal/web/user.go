@@ -94,7 +94,7 @@ func (u *UserHandler) Login(context *gin.Context) {
 		return
 	}
 
-	//登录成功干的事儿, 但是还没实现
+	//登录成功后设置userid的值
 	sess := sessions.Default(context)
 	sess.Set("userId", user.Id)
 	err = sess.Save()
