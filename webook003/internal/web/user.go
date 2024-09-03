@@ -3,6 +3,7 @@ package web
 import (
 	"errors"
 	regexp "github.com/dlclark/regexp2"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"goworkwebook/webook003/internal/domain"
 	"goworkwebook/webook003/internal/service"
@@ -83,7 +84,7 @@ func (u *UserHandler) Login(context *gin.Context) {
 		return
 	}
 
-	err := u.svc.Login(context, req.Email, req.Password)
+	user, err := u.svc.Login(context, req.Email, req.Password)
 	if errors.Is(err, service.ErrInvalidUserOrPassword) {
 		context.String(http.StatusOK, "用户名或密码错误")
 		return
@@ -92,8 +93,12 @@ func (u *UserHandler) Login(context *gin.Context) {
 		context.String(http.StatusOK, "系统错误")
 		return
 	}
-	context.String(http.StatusOK, "登录成功")
+
 	//登录成功干的事儿, 但是还没实现
+	sess := sessions.Default(context)
+	sess.Set("userId", user.Id)
+	err = sess.Save()
+	context.String(http.StatusOK, "登录成功")
 	return
 }
 

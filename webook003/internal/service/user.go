@@ -35,18 +35,18 @@ func (svc *UserService) SignUp(ctx context.Context, u domain.DMUser) error {
 	return svc.repo.Create(ctx, u)
 }
 
-func (svc *UserService) Login(c *gin.Context, email string, password string) error {
+func (svc *UserService) Login(c *gin.Context, email string, password string) (domain.DMUser, error) {
 	u, err := svc.repo.FindByMail(c, email)
 	if errors.Is(err, repository.ErrUserNotFound) {
-		return ErrInvalidUserOrPassword
+		return domain.DMUser{}, ErrInvalidUserOrPassword
 	}
 	if err != nil {
-		return err //系统错误 等会儿再来谈论
+		return domain.DMUser{}, err //系统错误 等会儿再来谈论
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	if err != nil {
 		// 密码错误
-		return ErrInvalidUserOrPassword
+		return domain.DMUser{}, ErrInvalidUserOrPassword
 	}
-	return err
+	return u, err
 }
