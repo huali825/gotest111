@@ -3,7 +3,7 @@ package ioc
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"goworkwebook/webook003/internal/web/middleware"
 	"strings"
@@ -42,18 +42,25 @@ func InitMiddleware(server *gin.Engine) *gin.Engine {
 		println("这是我的 Middleware 4")
 	})
 
-	//session搞好了
-	// 创建一个cookie存储
-	store := cookie.NewStore([]byte("secret"))
+	//store的三种实现方式:
+	// 第1种实现方式
+	//store := cookie.NewStore([]byte("secret"))
+
+	//第2种实现方式
+	//store := memstore.NewStore([]byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"), []byte("0Pf2r0wZBpXVXlQNdpwCXN4ncnlnZSc3"))
+
+	//第3种实现方式
+	store, err := redis.NewStore(16,
+		"tcp", "localhost:6379", "",
+		[]byte("95osj3fUD7fo0mlYdDbncXz4VD2igvf0"), []byte("0Pf2r0wZBpXVXlQNdpwCXN4ncnlnZSc3"))
+	if err != nil {
+		panic(err)
+	}
+
 	// 使用sessions中间件，将cookie存储命名为"mysession"
-	server.Use(
-		sessions.Sessions("mysession", store),
-	)
-	server.Use(
-		middleware.NewLoginMiddlewareBuilder().
-			IgnorePaths("/users/signup").
-			IgnorePaths("/users/login").Build(),
-	)
+	server.Use(sessions.Sessions("mysession", store))
+	server.Use(middleware.NewLoginMiddlewareBuilder().
+		IgnorePaths("/users/signup").IgnorePaths("/users/login").Build())
 
 	return server
 }
