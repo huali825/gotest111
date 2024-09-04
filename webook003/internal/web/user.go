@@ -95,9 +95,30 @@ func (u *UserHandler) Login(context *gin.Context) {
 	}
 
 	//登录成功后设置userid的值
-	sess := sessions.Default(context)
-	sess.Set("userId", user.Id)
-	err = sess.Save()
+	sess := sessions.Default(context) //获取session
+	sess.Set("userId", user.Id)       //设置session
+	sess.Options(sessions.Options{
+		// 设置cookie的路径
+		Path: "",
+		// 设置cookie的域名
+		Domain: "",
+		// 设置cookie的最大有效期，单位为秒
+		MaxAge: 10,
+		//MaxAge: 3600 * 24 * 7,
+		// 设置cookie是否只在https协议下有效
+		Secure: false,
+		// 设置cookie是否只能通过http协议访问
+		HttpOnly: false,
+		// 设置cookie的SameSite属性，0表示不限制
+		SameSite: 0,
+	})
+	err = sess.Save() //保存session
+	if err != nil {
+		context.String(http.StatusOK, "系统错误")
+		return
+	}
+
+	//登录成功返回 状态200
 	context.String(http.StatusOK, "登录成功")
 	return
 }
