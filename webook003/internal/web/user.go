@@ -124,7 +124,8 @@ func (u *UserHandler) Login(context *gin.Context) {
 }
 
 func (u *UserHandler) Edit(context *gin.Context) {
-	//TODO: implement
+	context.String(http.StatusOK, "未实现!!!!")
+	return
 }
 
 func (u *UserHandler) Profile(context *gin.Context) {
