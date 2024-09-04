@@ -103,8 +103,8 @@ func (u *UserHandler) Login(context *gin.Context) {
 		// 设置cookie的域名
 		Domain: "",
 		// 设置cookie的最大有效期，单位为秒
-		MaxAge: 10,
-		//MaxAge: 3600 * 24 * 7,
+		MaxAge: 20, //单位秒
+		//MaxAge: 3600 * 24 * 7, //一周过期
 		// 设置cookie是否只在https协议下有效
 		Secure: false,
 		// 设置cookie是否只能通过http协议访问
