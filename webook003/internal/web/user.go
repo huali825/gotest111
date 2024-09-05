@@ -5,9 +5,11 @@ import (
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	jwt "github.com/golang-jwt/jwt/v5"
 	"goworkwebook/webook003/internal/domain"
 	"goworkwebook/webook003/internal/service"
 	"net/http"
+	"time"
 )
 
 type UserHandler struct {
@@ -32,7 +34,8 @@ func NewUserHandler(server *gin.Engine, svc *service.UserService) *UserHandler {
 
 func (u *UserHandler) RegisterRoutes() {
 	u.s.POST("/users/signup", u.SignUp)
-	u.s.POST("/users/login", u.Login)
+	u.s.POST("/users/login", u.LoginJWT)
+	//u.s.POST("/users/login", u.Login)
 	u.s.POST("/users/edit", u.Edit)
 	u.s.GET("/users/profile", u.Profile)
 
@@ -71,6 +74,55 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 	ctx.String(http.StatusOK, "注册成功")
 
 	//context.String(http.StatusOK, "Hello, this is signup")
+}
+
+func (u *UserHandler) LoginJWT(ctx *gin.Context) {
+	type Req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	DmUser, err := u.svc.Login(ctx, req.Email, req.Password)
+
+	switch err {
+	case nil:
+		// 创建用户声明
+		uc := UserClaims{
+			Uid:       DmUser.Id,                   // 用户ID
+			UserAgent: ctx.GetHeader("User-Agent"), // 用户代理
+			RegisteredClaims: jwt.RegisteredClaims{
+				// 1 分钟过期
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 1)), // 过期时间
+			},
+		}
+		// 创建JWT
+		token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
+		// 签名JWT 加密
+		tokenStr, err := token.SignedString(JWTKey)
+		if err != nil {
+			// 签名失败，返回系统错误
+			ctx.String(http.StatusOK, "系统错误")
+		}
+		// 设置JWT头部
+		ctx.Header("x-jwt-token", tokenStr)
+		// 返回登录成功
+		ctx.String(http.StatusOK, "登录成功")
+	case service.ErrInvalidUserOrPassword:
+		ctx.String(http.StatusOK, "用户名或者密码不对")
+	default:
+		ctx.String(http.StatusOK, "系统错误")
+	}
+}
+
+var JWTKey = []byte("k6CswdUm77WKcbM68UQUuxVsHSpTCwgK")
+
+type UserClaims struct {
+	jwt.RegisteredClaims
+	Uid       int64
+	UserAgent string
 }
 
 func (u *UserHandler) Login(context *gin.Context) {
