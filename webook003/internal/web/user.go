@@ -92,7 +92,7 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 		// 创建用户声明
 		uc := UserClaims{
 			Uid:       DmUser.Id,                   // 用户ID
-			UserAgent: ctx.GetHeader("User-Agent"), // 用户代理
+			UserAgent: ctx.GetHeader("User-Agent"), //   使用user agent 防止 token 被劫持
 			RegisteredClaims: jwt.RegisteredClaims{
 				// 1 分钟过期
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 1)), // 过期时间

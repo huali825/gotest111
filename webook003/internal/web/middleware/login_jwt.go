@@ -64,6 +64,7 @@ func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 		}
 
 		if uc.UserAgent != ctx.GetHeader("User-Agent") {
+			// 使用user agent 防止 token 被劫持
 			// 后期我们讲到了监控告警的时候，这个地方要埋点
 			// 能够进来这个分支的，大概率是攻击者
 			ctx.AbortWithStatus(http.StatusUnauthorized)
