@@ -3,7 +3,10 @@ package ioc
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
+	"goworkwebook/webook003/config"
 	"goworkwebook/webook003/internal/web/middleware"
+	"goworkwebook/webook003/pkg/ginx/middleware/ratelimit"
 	"strings"
 	"time"
 )
@@ -17,6 +20,7 @@ func InitMiddleware(server *gin.Engine) *gin.Engine {
 		func(ctx *gin.Context) {
 			println("这是我的 Middleware 2")
 		},
+		// 跨域问题解决
 		// 创建一个新的cors中间件，配置允许的来源、方法、头部、暴露的头部、是否允许发送凭证、最大缓存时间以及允许的来源函数
 		cors.New(cors.Config{
 			// 允许的来源
@@ -46,9 +50,16 @@ func InitMiddleware(server *gin.Engine) *gin.Engine {
 		},
 	)
 
-	server.Use(func(context *gin.Context) {
-		println("这是我的 Middleware 4")
+	// 使用redis实现限流
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: config.Config.Redis.Addr,
 	})
+	server.Use(
+		func(context *gin.Context) {
+			println("redis限流, pkg/ginx/middleware/ratelimit实现的")
+		},
+		ratelimit.NewBuilder(redisClient, time.Second, 1).Build(),
+	)
 
 	//store的三种实现方式:
 	// 第1种实现方式
@@ -70,9 +81,15 @@ func InitMiddleware(server *gin.Engine) *gin.Engine {
 	//server.Use(middleware.NewLoginMiddlewareBuilder().
 	//	IgnorePaths("/users/signup").
 	//	IgnorePaths("/users/login").Build())
-	server.Use(middleware.NewLoginJWTMiddlewareBuilder().
-		IgnorePaths("/users/signup").
-		IgnorePaths("/users/login").CheckLogin())
+
+	server.Use()
+	server.Use(
+		func(context *gin.Context) {
+			println("jwt登录校验")
+		},
+		middleware.NewLoginJWTMiddlewareBuilder().
+			IgnorePaths("/users/signup").
+			IgnorePaths("/users/login").CheckLogin())
 
 	return server
 }
