@@ -6,7 +6,7 @@ import (
 )
 
 func TestName(t *testing.T) {
-	printFunc2()
+	printFunc1()
 	printFunc2()
 }
 
