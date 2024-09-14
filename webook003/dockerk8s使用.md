@@ -74,3 +74,5 @@ k8s启动 验证 get方法  http://localhost/hello    (80端口)
 
 [localhost:82/hello](http://localhost:82/hello)
 
+kubectl apply -f k8s-mysql-deployment2.yaml
+kubectl apply -f k8s-mysql-service2.yaml
