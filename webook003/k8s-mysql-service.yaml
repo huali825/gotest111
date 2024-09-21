@@ -7,11 +7,11 @@ spec:
     app: webook-live-mysql
   ports:
     - protocol: TCP
-# 容器暴露的端口
+# 容器暴露的端口 客户使用
       port: 11309
-# 容器内部端口
+# 容器内部端口 webook.exe访问
       targetPort: 3306
-# 集群内部访问
+# 集群内部访问 开发者在goland访问
       nodePort: 30002
   type: NodePort
   
