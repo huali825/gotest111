@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"goworkwebook/webook003/internal/repository"
+	"goworkwebook/webook003/internal/repository/cache"
 	"goworkwebook/webook003/internal/repository/dao"
 	"goworkwebook/webook003/internal/service"
 	"goworkwebook/webook003/internal/web"
@@ -11,6 +12,7 @@ import (
 
 func InitWeb(server *gin.Engine, db *gorm.DB) *web.UserHandler {
 	ud := dao.NewUserDAO(db)
+	c := cache.NewUserCache()
 	repo := repository.NewUserRepository(ud)
 	svc := service.NewUserService(repo)
 	u := web.NewUserHandler(server, svc)

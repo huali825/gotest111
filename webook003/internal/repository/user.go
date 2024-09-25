@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"goworkwebook/webook003/internal/domain"
+	"goworkwebook/webook003/internal/repository/cache"
 	"goworkwebook/webook003/internal/repository/dao"
 )
 
@@ -15,12 +16,14 @@ var (
 )
 
 type UserRepository struct {
-	dao *dao.UserDAO
+	dao   *dao.UserDAO
+	cache *cache.UserCache
 }
 
-func NewUserRepository(dao *dao.UserDAO) *UserRepository {
+func NewUserRepository(dao *dao.UserDAO, c *cache.UserCache) *UserRepository {
 	return &UserRepository{
-		dao: dao,
+		dao:   dao,
+		cache: c,
 	}
 }
 
