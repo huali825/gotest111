@@ -2,8 +2,8 @@ package dao
 
 import (
 	"context"
+	"database/sql"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 	"time"
@@ -44,25 +44,57 @@ func (dao *UserDAO) Insert(ctx context.Context, u User) error {
 	return err
 }
 
-func (dao *UserDAO) FindByEmail(c *gin.Context, email string) (User, error) {
+func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (User, error) {
 	var user User
 	// 这里用domain.DMUser，因为domain.DMUser和User结构体字段完全一致
-	err := dao.db.WithContext(c).Where("email = ?", email).First(&user).Error
+	err := dao.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	return user, err
+}
+
+func (dao *UserDAO) FindByPhone(ctx context.Context, phone string) (User, error) {
+	var res User
+	err := dao.db.WithContext(ctx).Where("phone = ?", phone).First(&res).Error
+	return res, err
 }
 
 // User 直接对应数据库表结构
 // 有些人叫做 entity，有些人叫做 model，有些人叫做 PO(persistent object)
+//type User struct {
+//	Id int64 `gorm:"primaryKey,autoIncrement"`
+//	// 全部用户唯一
+//	Email    string `gorm:"unique"`
+//	Password string
+//
+//	// 往这面加
+//
+//	// 创建时间，毫秒数
+//	Ctime int64
+//	// 更新时间，毫秒数
+//	Utime int64
+//}
+
+// User 2024年9月28日23:21:04
 type User struct {
 	Id int64 `gorm:"primaryKey,autoIncrement"`
-	// 全部用户唯一
-	Email    string `gorm:"unique"`
+	// 代表这是一个可以为 NULL 的列
+	//Email    *string
+	Email    sql.NullString `gorm:"unique"`
 	Password string
 
-	// 往这面加
+	Nickname string `gorm:"type=varchar(128)"`
+	// YYYY-MM-DD
+	Birthday int64
+	AboutMe  string `gorm:"type=varchar(4096)"`
 
-	// 创建时间，毫秒数
+	// 代表这是一个可以为 NULL 的列
+	Phone sql.NullString `gorm:"unique"`
+
+	// 时区，UTC 0 的毫秒数
+	// 创建时间
 	Ctime int64
-	// 更新时间，毫秒数
+	// 更新时间
 	Utime int64
+
+	// json 存储
+	//Addr string
 }

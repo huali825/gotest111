@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"goworkwebook/webook003/internal/domain"
 	"goworkwebook/webook003/internal/repository"
@@ -35,8 +34,8 @@ func (svc *UserService) SignUp(ctx context.Context, u domain.DMUser) error {
 	return svc.repo.Create(ctx, u)
 }
 
-func (svc *UserService) Login(c *gin.Context, email string, password string) (domain.DMUser, error) {
-	u, err := svc.repo.FindByMail(c, email)
+func (svc *UserService) Login(ctx context.Context, email string, password string) (domain.DMUser, error) {
+	u, err := svc.repo.FindByMail(ctx, email)
 	if errors.Is(err, repository.ErrUserNotFound) {
 		return domain.DMUser{}, ErrInvalidUserOrPassword
 	}
@@ -49,4 +48,28 @@ func (svc *UserService) Login(c *gin.Context, email string, password string) (do
 		return domain.DMUser{}, ErrInvalidUserOrPassword
 	}
 	return u, err
+}
+
+// FindOrCreate 先找，找不到就创建
+func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.DMUser, error) {
+	// 先找一下，我们认为，大部分用户是已经存在的用户
+	u, err := svc.repo.FindByPhone(ctx, phone)
+	if !errors.Is(err, repository.ErrUserNotFound) {
+		// 有两种情况
+		// err == nil, u 是可用的
+		// err != nil，系统错误，
+		return u, err
+	}
+	// 用户没找到
+	err = svc.repo.Create(ctx, domain.DMUser{
+		Phone: phone,
+	})
+	// 有两种可能，一种是 err 恰好是唯一索引冲突（phone）
+	// 一种是 err != nil，系统错误
+	if err != nil && !errors.Is(err, repository.ErrUserDuplicateEmail) {
+		return domain.DMUser{}, err
+	}
+	// 要么 err ==nil，要么ErrDuplicateUser，也代表用户存在
+	// 主从延迟，理论上来讲，强制走主库
+	return svc.repo.FindByPhone(ctx, phone)
 }

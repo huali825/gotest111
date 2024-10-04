@@ -17,7 +17,7 @@ func main() {
 	server := gin.Default()
 	db := ioc.InitDB()
 	ioc.InitMiddleware(server)
-	ioc.InitWeb(server, db)
+	InitWeb(server, db)
 
 	server.GET("/hello", func(ctx *gin.Context) {
 		ctx.String(200, "hello world 你来了")
