@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"goworkwebook/webook003/internal/repository"
 	"goworkwebook/webook003/internal/service/sms"
@@ -33,10 +34,9 @@ func (svc *CodeService) Send(ctx context.Context, biz, phone string) error {
 	return svc.sms.Send(ctx, codeTplId, []string{code}, phone)
 }
 
-func (svc *CodeService) Verify(ctx context.Context,
-	biz, phone, inputCode string) (bool, error) {
+func (svc *CodeService) Verify(ctx context.Context, biz, phone, inputCode string) (bool, error) {
 	ok, err := svc.repo.Verify(ctx, biz, phone, inputCode)
-	if err == repository.ErrCodeVerifyTooMany {
+	if errors.Is(err, repository.ErrCodeVerifyTooMany) {
 		// 相当于，我们对外面屏蔽了验证次数过多的错误，我们就是告诉调用者，你这个不对
 		return false, nil
 	}

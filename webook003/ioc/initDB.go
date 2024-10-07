@@ -7,7 +7,8 @@ import (
 )
 
 func InitDB() *gorm.DB {
-	db, err := gorm.Open(mysql.Open("root:root@tcp(localhost:30002)/webook"))
+
+	db, err := gorm.Open(mysql.Open("root:root@tcp(localhost:30003)/webook"))
 	if err != nil {
 		// 我只会在初始化过程中 panic
 		// panic 相当于整个 goroutine 结束

@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"github.com/ecodeclub/ekit"
 	"github.com/ecodeclub/ekit/slice"
-	sms "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms/v20210111"
+	tencentSms "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms/v20210111"
 )
 
 type Service struct {
-	client   *sms.Client
+	client   *tencentSms.Client
 	appId    *string
 	signName *string
 }
 
 func (s *Service) Send(ctx context.Context, tplId string, args []string, numbers ...string) error {
-	request := sms.NewSendSmsRequest()
+	request := tencentSms.NewSendSmsRequest()
 	request.SetContext(ctx)
 	request.SmsSdkAppId = s.appId
 	request.SignName = s.signName
@@ -48,7 +48,7 @@ func (s *Service) toPtrSlice(data []string) []*string {
 		})
 }
 
-func NewService(client *sms.Client, appId string, signName string) *Service {
+func NewService(client *tencentSms.Client, appId string, signName string) *Service {
 	return &Service{
 		client:   client,
 		appId:    &appId,
