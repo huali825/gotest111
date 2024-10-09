@@ -20,13 +20,13 @@ const (
 )
 
 type UserHandler struct {
-	svc              *service.UserService
-	codeSvc          *service.CodeService
+	svc              service.UserService
+	codeSvc          service.CodeService
 	emailRegexRxp    *regexp.Regexp
 	passwordRegexRxp *regexp.Regexp
 }
 
-func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
 	return &UserHandler{
 		svc:              svc,
 		codeSvc:          codeSvc,
@@ -35,21 +35,21 @@ func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *Use
 	}
 }
 
-func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
+func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("/users")
 
-	ug.POST("/signup", u.SignUp)
-	ug.POST("/login", u.LoginJWT)
-	//ug.POST("/users/login", u.Login)
-	ug.POST("/edit", u.Edit)
-	ug.GET("/profile", u.Profile)
+	ug.POST("/signup", h.SignUp)
+	ug.POST("/login", h.LoginJWT)
+	//ug.POST("/users/login", h.Login)
+	ug.POST("/edit", h.Edit)
+	ug.GET("/profile", h.Profile)
 
 	// 手机验证码登录相关功能
-	ug.POST("/login_sms/code/send", u.SendSMSLoginCode)
-	ug.POST("/login_sms", u.LoginSMS)
+	ug.POST("/login_sms/code/send", h.SendSMSLoginCode)
+	ug.POST("/login_sms", h.LoginSMS)
 }
 
-func (u *UserHandler) SignUp(ctx *gin.Context) {
+func (h *UserHandler) SignUp(ctx *gin.Context) {
 	type SignUpReq struct {
 		Email           string `json:"email"`
 		Password        string `json:"password"`
@@ -60,17 +60,17 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
-	err := u.emailPasswordFormat(ctx, req.Email, req.Password, req.ConfirmPassword)
+	err := h.emailPasswordFormat(ctx, req.Email, req.Password, req.ConfirmPassword)
 	if err != nil {
 		return
 	}
 
 	// 调用一下 svc 的方法
-	err = u.svc.SignUp(ctx, domain.DMUser{
+	err = h.svc.Signup(ctx, domain.DMUser{
 		Email:    req.Email,
 		Password: req.Password,
 	})
-	if errors.Is(err, service.ErrUserDuplicateEmail) {
+	if errors.Is(err, service.ErrDuplicateEmail) {
 		ctx.String(http.StatusOK, "邮箱冲突")
 		return
 	}
@@ -84,7 +84,7 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 	//context.String(http.StatusOK, "Hello, this is signup")
 }
 
-func (u *UserHandler) LoginJWT(ctx *gin.Context) {
+func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 	type Req struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -93,11 +93,11 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	DmUser, err := u.svc.Login(ctx, req.Email, req.Password)
+	DmUser, err := h.svc.Login(ctx, req.Email, req.Password)
 
 	switch err {
 	case nil:
-		u.setJWTToken(ctx, DmUser.Id)
+		h.setJWTToken(ctx, DmUser.Id)
 		// 返回登录成功
 		ctx.String(http.StatusOK, "登录成功")
 	case service.ErrInvalidUserOrPassword:
@@ -107,7 +107,7 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 	}
 }
 
-func (u *UserHandler) setJWTToken(ctx *gin.Context, uid int64) {
+func (h *UserHandler) setJWTToken(ctx *gin.Context, uid int64) {
 	// 创建用户声明
 	uc := UserClaims{
 		Uid:       uid,                         // 用户ID
@@ -137,7 +137,7 @@ type UserClaims struct {
 	UserAgent string
 }
 
-func (u *UserHandler) Login(context *gin.Context) {
+func (h *UserHandler) Login(context *gin.Context) {
 	type LoginReq struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -148,7 +148,7 @@ func (u *UserHandler) Login(context *gin.Context) {
 		return
 	}
 
-	user, err := u.svc.Login(context, req.Email, req.Password)
+	user, err := h.svc.Login(context, req.Email, req.Password)
 	if errors.Is(err, service.ErrInvalidUserOrPassword) {
 		context.String(http.StatusOK, "用户名或密码错误")
 		return
@@ -187,17 +187,80 @@ func (u *UserHandler) Login(context *gin.Context) {
 	return
 }
 
-func (u *UserHandler) Edit(context *gin.Context) {
-	context.String(http.StatusOK, "未实现!!!!")
-	return
+func (h *UserHandler) Edit(ctx *gin.Context) {
+
+	// 嵌入一段刷新过期时间的代码
+	type Req struct {
+		// 改邮箱，密码，或者能不能改手机号
+
+		Nickname string `json:"nickname"`
+		// YYYY-MM-DD
+		Birthday string `json:"birthday"`
+		AboutMe  string `json:"aboutMe"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	//sess := sessions.Default(ctx)
+	//sess.Get("uid")
+	uc, ok := ctx.MustGet("user").(UserClaims)
+	if !ok {
+		//ctx.String(http.StatusOK, "系统错误")
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	// 用户输入不对
+	birthday, err := time.Parse(time.DateOnly, req.Birthday)
+	if err != nil {
+		//ctx.String(http.StatusOK, "系统错误")
+		ctx.String(http.StatusOK, "生日格式不对")
+		return
+	}
+	err = h.svc.UpdateNonSensitiveInfo(ctx, domain.DMUser{
+		Id:       uc.Uid,
+		Nickname: req.Nickname,
+		Birthday: birthday,
+		AboutMe:  req.AboutMe,
+	})
+	if err != nil {
+		ctx.String(http.StatusOK, "系统异常")
+		return
+	}
+	ctx.String(http.StatusOK, "更新成功")
 }
 
-func (u *UserHandler) Profile(context *gin.Context) {
-	context.String(http.StatusOK, "这是 profile")
-	return
+func (h *UserHandler) Profile(ctx *gin.Context) {
+	//us := ctx.MustGet("user").(UserClaims)
+	//ctx.String(http.StatusOK, "这是 profile")
+	// 嵌入一段刷新过期时间的代码
+
+	uc, ok := ctx.MustGet("user").(UserClaims)
+	if !ok {
+		//ctx.String(http.StatusOK, "系统错误")
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	u, err := h.svc.FindById(ctx, uc.Uid)
+	if err != nil {
+		ctx.String(http.StatusOK, "系统异常")
+		return
+	}
+	type User struct {
+		Nickname string `json:"nickname"`
+		Email    string `json:"email"`
+		AboutMe  string `json:"aboutMe"`
+		Birthday string `json:"birthday"`
+	}
+	ctx.JSON(http.StatusOK, User{
+		Nickname: u.Nickname,
+		Email:    u.Email,
+		AboutMe:  u.AboutMe,
+		Birthday: u.Birthday.Format(time.DateOnly),
+	})
 }
 
-func (u *UserHandler) SendSMSLoginCode(ctx *gin.Context) {
+func (h *UserHandler) SendSMSLoginCode(ctx *gin.Context) {
 	type Req struct {
 		Phone string `json:"phone"`
 	}
@@ -213,7 +276,7 @@ func (u *UserHandler) SendSMSLoginCode(ctx *gin.Context) {
 		})
 		return
 	}
-	err := u.codeSvc.Send(ctx, bizLogin, req.Phone)
+	err := h.codeSvc.Send(ctx, bizLogin, req.Phone)
 	switch err {
 	case nil:
 		ctx.JSON(http.StatusOK, Result{
@@ -234,7 +297,7 @@ func (u *UserHandler) SendSMSLoginCode(ctx *gin.Context) {
 }
 
 // LoginSMS 使用短信验证码登录
-func (u *UserHandler) LoginSMS(ctx *gin.Context) {
+func (h *UserHandler) LoginSMS(ctx *gin.Context) {
 	type Req struct {
 		Phone string `json:"phone"`
 		Code  string `json:"code"`
@@ -244,7 +307,7 @@ func (u *UserHandler) LoginSMS(ctx *gin.Context) {
 		return
 	}
 
-	ok, err := u.codeSvc.Verify(ctx, bizLogin, req.Phone, req.Code)
+	ok, err := h.codeSvc.Verify(ctx, bizLogin, req.Phone, req.Code)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
@@ -259,7 +322,7 @@ func (u *UserHandler) LoginSMS(ctx *gin.Context) {
 		})
 		return
 	}
-	dmUser, err := u.svc.FindOrCreate(ctx, req.Phone)
+	dmUser, err := h.svc.FindOrCreate(ctx, req.Phone)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
@@ -267,16 +330,16 @@ func (u *UserHandler) LoginSMS(ctx *gin.Context) {
 		})
 		return
 	}
-	u.setJWTToken(ctx, dmUser.Id)
+	h.setJWTToken(ctx, dmUser.Id)
 	ctx.JSON(http.StatusOK, Result{
 		Msg: "登录成功",
 	})
 }
 
 // 检验邮箱密码格式
-func (u *UserHandler) emailPasswordFormat(
+func (h *UserHandler) emailPasswordFormat(
 	ctx *gin.Context, email string, password string, password2 string) error {
-	isEmail, err := u.emailRegexRxp.MatchString(email)
+	isEmail, err := h.emailRegexRxp.MatchString(email)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return errors.New("系统错误")
@@ -289,7 +352,7 @@ func (u *UserHandler) emailPasswordFormat(
 		ctx.String(http.StatusOK, "两次密码不一致")
 		return errors.New("两次密码不一致")
 	}
-	isPassword, err := u.passwordRegexRxp.MatchString(password)
+	isPassword, err := h.passwordRegexRxp.MatchString(password)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return errors.New("系统错误")

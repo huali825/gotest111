@@ -6,6 +6,7 @@ import (
 	"goworkwebook/webook003/internal/domain"
 	"goworkwebook/webook003/internal/repository/cache"
 	"goworkwebook/webook003/internal/repository/dao"
+	"log"
 	"time"
 )
 
@@ -17,23 +18,31 @@ var (
 	ErrUserNotFound = dao.ErrUserNotFound
 )
 
-type UserRepository struct {
-	dao   *dao.UserDAO
-	cache *cache.UserCache
+type UserRepository interface {
+	Create(ctx context.Context, u domain.DMUser) error
+	FindByEmail(ctx context.Context, email string) (domain.DMUser, error)
+	UpdateNonZeroFields(ctx context.Context, user domain.DMUser) error
+	FindByPhone(ctx context.Context, phone string) (domain.DMUser, error)
+	FindById(ctx context.Context, uid int64) (domain.DMUser, error)
 }
 
-func NewUserRepository(dao *dao.UserDAO, c *cache.UserCache) *UserRepository {
-	return &UserRepository{
+type CachedUserRepository struct {
+	dao   dao.UserDAO
+	cache cache.UserCache
+}
+
+func NewUserRepository(dao dao.UserDAO, c cache.UserCache) UserRepository {
+	return &CachedUserRepository{
 		dao:   dao,
 		cache: c,
 	}
 }
 
-func (r *UserRepository) Create(ctx context.Context, u domain.DMUser) error {
+func (r *CachedUserRepository) Create(ctx context.Context, u domain.DMUser) error {
 	return r.dao.Insert(ctx, r.toEntity(u))
 }
 
-func (r *UserRepository) FindByMail(ctx context.Context, email string) (domain.DMUser, error) {
+func (r *CachedUserRepository) FindByEmail(ctx context.Context, email string) (domain.DMUser, error) {
 	u, err := r.dao.FindByEmail(ctx, email)
 	if err != nil {
 		return domain.DMUser{}, err
@@ -41,7 +50,7 @@ func (r *UserRepository) FindByMail(ctx context.Context, email string) (domain.D
 	return r.toDomain(u), nil
 }
 
-func (r *UserRepository) toDomain(u dao.User) domain.DMUser {
+func (r *CachedUserRepository) toDomain(u dao.User) domain.DMUser {
 	return domain.DMUser{
 		Id:       u.Id,
 		Email:    u.Email.String,
@@ -54,7 +63,7 @@ func (r *UserRepository) toDomain(u dao.User) domain.DMUser {
 }
 
 // toEntity 将domain转换为dao
-func (r *UserRepository) toEntity(u domain.DMUser) dao.User {
+func (r *CachedUserRepository) toEntity(u domain.DMUser) dao.User {
 	return dao.User{
 		Id: u.Id,
 		Email: sql.NullString{
@@ -72,10 +81,47 @@ func (r *UserRepository) toEntity(u domain.DMUser) dao.User {
 	}
 }
 
-func (r *UserRepository) FindByPhone(ctx context.Context, phone string) (domain.DMUser, error) {
+func (r *CachedUserRepository) FindByPhone(ctx context.Context, phone string) (domain.DMUser, error) {
 	u, err := r.dao.FindByPhone(ctx, phone)
 	if err != nil {
 		return domain.DMUser{}, err
 	}
 	return r.toDomain(u), nil
+}
+
+func (repo *CachedUserRepository) UpdateNonZeroFields(ctx context.Context,
+	user domain.DMUser) error {
+	return repo.dao.UpdateById(ctx, repo.toEntity(user))
+}
+
+func (repo *CachedUserRepository) FindById(ctx context.Context, uid int64) (domain.DMUser, error) {
+	du, err := repo.cache.Get(ctx, uid)
+	// 只要 err 为 nil，就返回
+	if err == nil {
+		return du, nil
+	}
+
+	// err 不为 nil，就要查询数据库
+	// err 有两种可能
+	// 1. key 不存在，说明 redis 是正常的
+	// 2. 访问 redis 有问题。可能是网络有问题，也可能是 redis 本身就崩溃了
+
+	u, err := repo.dao.FindById(ctx, uid)
+	if err != nil {
+		return domain.DMUser{}, err
+	}
+	du = repo.toDomain(u)
+	//go func() {
+	//	err = repo.cache.Set(ctx, du)
+	//	if err != nil {
+	//		log.Println(err)
+	//	}
+	//}()
+
+	err = repo.cache.Set(ctx, du)
+	if err != nil {
+		// 网络崩了，也可能是 redis 崩了
+		log.Println(err)
+	}
+	return du, nil
 }

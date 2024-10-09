@@ -8,21 +8,30 @@ import (
 	"goworkwebook/webook003/internal/repository"
 )
 
-var ErrUserDuplicateEmail = repository.ErrUserDuplicateEmail
-
+var ErrDuplicateEmail = repository.ErrUserDuplicateEmail
 var ErrInvalidUserOrPassword = errors.New("账号/邮箱或密码不对")
 
-type UserService struct {
-	repo *repository.UserRepository
+type UserService interface {
+	Signup(ctx context.Context, u domain.DMUser) error
+	Login(ctx context.Context, email string, password string) (domain.DMUser, error)
+	UpdateNonSensitiveInfo(ctx context.Context,
+		user domain.DMUser) error
+	FindById(ctx context.Context,
+		uid int64) (domain.DMUser, error)
+	FindOrCreate(ctx context.Context, phone string) (domain.DMUser, error)
 }
 
-func NewUserService(repo *repository.UserRepository) *UserService {
-	return &UserService{
+type userService struct {
+	repo repository.UserRepository
+}
+
+func NewUserService(repo repository.UserRepository) UserService {
+	return &userService{
 		repo: repo,
 	}
 }
 
-func (svc *UserService) SignUp(ctx context.Context, u domain.DMUser) error {
+func (svc *userService) Signup(ctx context.Context, u domain.DMUser) error {
 	// 你要考虑加密放在哪里的问题了
 	//使用 BCrypt 加密
 	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
@@ -34,8 +43,8 @@ func (svc *UserService) SignUp(ctx context.Context, u domain.DMUser) error {
 	return svc.repo.Create(ctx, u)
 }
 
-func (svc *UserService) Login(ctx context.Context, email string, password string) (domain.DMUser, error) {
-	u, err := svc.repo.FindByMail(ctx, email)
+func (svc *userService) Login(ctx context.Context, email string, password string) (domain.DMUser, error) {
+	u, err := svc.repo.FindByEmail(ctx, email)
 	if errors.Is(err, repository.ErrUserNotFound) {
 		return domain.DMUser{}, ErrInvalidUserOrPassword
 	}
@@ -51,7 +60,7 @@ func (svc *UserService) Login(ctx context.Context, email string, password string
 }
 
 // FindOrCreate 先找，找不到就创建
-func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.DMUser, error) {
+func (svc *userService) FindOrCreate(ctx context.Context, phone string) (domain.DMUser, error) {
 	// 先找一下，我们认为，大部分用户是已经存在的用户
 	u, err := svc.repo.FindByPhone(ctx, phone)
 	if !errors.Is(err, repository.ErrUserNotFound) {
@@ -72,4 +81,15 @@ func (svc *UserService) FindOrCreate(ctx context.Context, phone string) (domain.
 	// 要么 err ==nil，要么ErrDuplicateUser，也代表用户存在
 	// 主从延迟，理论上来讲，强制走主库
 	return svc.repo.FindByPhone(ctx, phone)
+}
+
+func (svc *userService) UpdateNonSensitiveInfo(ctx context.Context,
+	user domain.DMUser) error {
+	// UpdateNicknameAndXXAnd
+	return svc.repo.UpdateNonZeroFields(ctx, user)
+}
+
+func (svc *userService) FindById(ctx context.Context,
+	uid int64) (domain.DMUser, error) {
+	return svc.repo.FindById(ctx, uid)
 }
