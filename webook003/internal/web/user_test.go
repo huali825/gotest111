@@ -10,7 +10,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"goworkwebook/webook003/internal/domain"
 	"goworkwebook/webook003/internal/service"
-	svcmocks "goworkwebook/webook003/internal/service/mocks"
+	svcmocks2 "goworkwebook/webook003/internal/service/mocks"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -35,14 +35,14 @@ func TestUserHandler_SignUp(t *testing.T) {
 			name: "注册成功",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
 				// 创建UserService mock
-				userSvc := svcmocks.NewMockUserService(ctrl)
+				userSvc := svcmocks2.NewMockUserService(ctrl)
 				// 预期Signup方法返回nil，表示注册成功
 				userSvc.EXPECT().Signup(gomock.Any(), domain.DMUser{
 					Email:    "123@qq.com",
 					Password: "hello#world123",
 				}).Return(nil)
 				// 创建CodeService mock
-				codeSvc := svcmocks.NewMockCodeService(ctrl)
+				codeSvc := svcmocks2.NewMockCodeService(ctrl)
 				return userSvc, codeSvc
 			},
 			reqBuilder: func(t *testing.T) *http.Request {
@@ -66,8 +66,8 @@ func TestUserHandler_SignUp(t *testing.T) {
 		{
 			name: "Bind出错",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
-				userSvc := svcmocks.NewMockUserService(ctrl)
-				codeSvc := svcmocks.NewMockCodeService(ctrl)
+				userSvc := svcmocks2.NewMockUserService(ctrl)
+				codeSvc := svcmocks2.NewMockCodeService(ctrl)
 				return userSvc, codeSvc
 			},
 			reqBuilder: func(t *testing.T) *http.Request {
@@ -87,8 +87,8 @@ func TestUserHandler_SignUp(t *testing.T) {
 		{
 			name: "邮箱格式不对",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
-				userSvc := svcmocks.NewMockUserService(ctrl)
-				codeSvc := svcmocks.NewMockCodeService(ctrl)
+				userSvc := svcmocks2.NewMockUserService(ctrl)
+				codeSvc := svcmocks2.NewMockCodeService(ctrl)
 				return userSvc, codeSvc
 			},
 			reqBuilder: func(t *testing.T) *http.Request {
@@ -110,8 +110,8 @@ func TestUserHandler_SignUp(t *testing.T) {
 		{
 			name: "两次密码输入不同",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
-				userSvc := svcmocks.NewMockUserService(ctrl)
-				codeSvc := svcmocks.NewMockCodeService(ctrl)
+				userSvc := svcmocks2.NewMockUserService(ctrl)
+				codeSvc := svcmocks2.NewMockCodeService(ctrl)
 				return userSvc, codeSvc
 			},
 			reqBuilder: func(t *testing.T) *http.Request {
@@ -133,8 +133,8 @@ func TestUserHandler_SignUp(t *testing.T) {
 		{
 			name: "密码格式不对",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
-				userSvc := svcmocks.NewMockUserService(ctrl)
-				codeSvc := svcmocks.NewMockCodeService(ctrl)
+				userSvc := svcmocks2.NewMockUserService(ctrl)
+				codeSvc := svcmocks2.NewMockCodeService(ctrl)
 				return userSvc, codeSvc
 			},
 			reqBuilder: func(t *testing.T) *http.Request {
@@ -156,12 +156,12 @@ func TestUserHandler_SignUp(t *testing.T) {
 		{
 			name: "系统错误",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
-				userSvc := svcmocks.NewMockUserService(ctrl)
+				userSvc := svcmocks2.NewMockUserService(ctrl)
 				userSvc.EXPECT().Signup(gomock.Any(), domain.DMUser{
 					Email:    "123@qq.com",
 					Password: "hello#world123",
 				}).Return(errors.New("db错误"))
-				codeSvc := svcmocks.NewMockCodeService(ctrl)
+				codeSvc := svcmocks2.NewMockCodeService(ctrl)
 				return userSvc, codeSvc
 			},
 			reqBuilder: func(t *testing.T) *http.Request {
@@ -183,12 +183,12 @@ func TestUserHandler_SignUp(t *testing.T) {
 		{
 			name: "邮箱冲突",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {
-				userSvc := svcmocks.NewMockUserService(ctrl)
+				userSvc := svcmocks2.NewMockUserService(ctrl)
 				userSvc.EXPECT().Signup(gomock.Any(), domain.DMUser{
 					Email:    "123@qq.com",
 					Password: "hello#world123",
 				}).Return(service.ErrDuplicateEmail)
-				codeSvc := svcmocks.NewMockCodeService(ctrl)
+				codeSvc := svcmocks2.NewMockCodeService(ctrl)
 				return userSvc, codeSvc
 			},
 			reqBuilder: func(t *testing.T) *http.Request {
@@ -204,13 +204,15 @@ func TestUserHandler_SignUp(t *testing.T) {
 			},
 
 			wantCode: http.StatusOK,
-			wantBody: "邮箱冲突，请换一个",
+			wantBody: "邮箱冲突",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			// NewController creates a new mock controller for testing.
 			ctrl := gomock.NewController(t)
+			// Defer is used to ensure that the Finish method is called when the function returns.
 			defer ctrl.Finish()
 
 			// 构造 handler
@@ -285,7 +287,7 @@ func TestMock(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	// mock 实现，模拟实现
-	userSvc := svcmocks.NewMockUserService(ctrl)
+	userSvc := svcmocks2.NewMockUserService(ctrl)
 	// 设置了模拟场景
 	userSvc.EXPECT().Signup(gomock.Any(), domain.DMUser{
 		Id:    1,

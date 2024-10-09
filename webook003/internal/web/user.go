@@ -56,8 +56,11 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 		ConfirmPassword string `json:"confirmPassword"`
 	}
 	var req SignUpReq
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.String(http.StatusOK, "系统错误")
+	//if err := ctx.ShouldBindJSON(&req); err != nil {
+	//	ctx.String(http.StatusBadRequest, "")
+	//	return
+	//}
+	if err := ctx.Bind(&req); err != nil {
 		return
 	}
 	err := h.emailPasswordFormat(ctx, req.Email, req.Password, req.ConfirmPassword)
@@ -75,7 +78,7 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 	if err != nil {
-		ctx.String(http.StatusOK, "系统异常")
+		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
 
@@ -345,11 +348,11 @@ func (h *UserHandler) emailPasswordFormat(
 		return errors.New("系统错误")
 	}
 	if !isEmail {
-		ctx.String(http.StatusOK, "邮箱格式错误")
+		ctx.String(http.StatusOK, "非法邮箱格式")
 		return errors.New("邮箱格式错误")
 	}
 	if password != password2 {
-		ctx.String(http.StatusOK, "两次密码不一致")
+		ctx.String(http.StatusOK, "两次输入密码不对")
 		return errors.New("两次密码不一致")
 	}
 	isPassword, err := h.passwordRegexRxp.MatchString(password)
@@ -358,7 +361,7 @@ func (h *UserHandler) emailPasswordFormat(
 		return errors.New("系统错误")
 	}
 	if !isPassword {
-		ctx.String(http.StatusOK, "密码格式错误")
+		ctx.String(http.StatusOK, "密码必须包含字母、数字、特殊字符，并且不少于八位")
 		return errors.New("密码格式错误")
 	}
 	return nil
