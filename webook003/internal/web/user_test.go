@@ -63,6 +63,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			wantCode: http.StatusOK,
 			wantBody: "注册成功",
 		},
+
 		{
 			name: "Bind出错",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService) {

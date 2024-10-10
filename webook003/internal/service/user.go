@@ -45,15 +45,19 @@ func (svc *userService) Signup(ctx context.Context, u domain.DMUser) error {
 
 func (svc *userService) Login(ctx context.Context, email string, password string) (domain.DMUser, error) {
 	u, err := svc.repo.FindByEmail(ctx, email)
+	// 根据传入的email查找用户
 	if errors.Is(err, repository.ErrUserNotFound) {
+		// 如果找不到用户，返回空用户和错误信息
 		return domain.DMUser{}, ErrInvalidUserOrPassword
 	}
 	if err != nil {
+		// 如果发生其他错误，返回空用户和错误信息
 		return domain.DMUser{}, err //系统错误 等会儿再来谈论
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	// 将用户密码和传入的密码进行比对
 	if err != nil {
-		// 密码错误
+		// 如果密码不匹配，返回错误信息
 		return domain.DMUser{}, ErrInvalidUserOrPassword
 	}
 	return u, err

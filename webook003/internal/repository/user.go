@@ -59,6 +59,7 @@ func (r *CachedUserRepository) toDomain(u dao.User) domain.DMUser {
 		AboutMe:  u.AboutMe,
 		Nickname: u.Nickname,
 		Birthday: time.UnixMilli(u.Birthday),
+		Ctime:    time.UnixMilli(u.Ctime),
 	}
 }
 
@@ -111,12 +112,6 @@ func (repo *CachedUserRepository) FindById(ctx context.Context, uid int64) (doma
 		return domain.DMUser{}, err
 	}
 	du = repo.toDomain(u)
-	//go func() {
-	//	err = repo.cache.Set(ctx, du)
-	//	if err != nil {
-	//		log.Println(err)
-	//	}
-	//}()
 
 	err = repo.cache.Set(ctx, du)
 	if err != nil {
