@@ -16,7 +16,7 @@ var (
 
 	// 定义错误信息
 	ErrCodeSendTooMany   = errors.New("发送太频繁")
-	ErrCodeVerifyTooMany = errors.New("发送太频繁")
+	ErrCodeVerifyTooMany = errors.New("验证太频繁")
 )
 
 type CodeCache interface {

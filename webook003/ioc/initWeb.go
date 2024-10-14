@@ -6,7 +6,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"goworkwebook/webook003/internal/web"
 	"goworkwebook/webook003/internal/web/middleware"
-	"goworkwebook/webook003/pkg/ginx/middleware/ratelimit"
 	"strings"
 	"time"
 )
@@ -48,8 +47,8 @@ func InitGinMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
 			},
 		}),
 
-		func(context *gin.Context) { println("redis限流, pkg/ginx/middleware/ratelimit实现的") },
-		ratelimit.NewBuilder(redisClient, time.Second, 1).Build(),
+		//func(context *gin.Context) { println("redis限流, pkg/ginx/middleware/ratelimit实现的") },
+		//ratelimit.NewBuilder(redisClient, time.Second, 1).Build(),
 
 		func(context *gin.Context) { println("jwt登录校验") },
 		middleware.NewLoginJWTMiddlewareBuilder().
