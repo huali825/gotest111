@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"goworkwebook/webook003/internal/domain"
 	"goworkwebook/webook003/internal/repository"
@@ -19,6 +20,7 @@ type UserService interface {
 	FindById(ctx context.Context,
 		uid int64) (domain.DMUser, error)
 	FindOrCreate(ctx context.Context, phone string) (domain.DMUser, error)
+	FindOrCreateByWechat(ctx context.Context, info domain.WechatInfo) (domain.DMUser, error)
 }
 
 type userService struct {
@@ -96,4 +98,22 @@ func (svc *userService) UpdateNonSensitiveInfo(ctx context.Context,
 func (svc *userService) FindById(ctx context.Context,
 	uid int64) (domain.DMUser, error) {
 	return svc.repo.FindById(ctx, uid)
+}
+
+func (svc *userService) FindOrCreateByWechat(ctx context.Context, wechatInfo domain.WechatInfo) (domain.DMUser, error) {
+	u, err := svc.repo.FindByWechat(ctx, wechatInfo.OpenId)
+	if err != repository.ErrUserNotFound {
+		return u, err
+	}
+	// 这边就是意味着是一个新用户
+	// JSON 格式的 wechatInfo
+	zap.L().Info("新用户", zap.Any("wechatInfo", wechatInfo))
+	//svc.logger.Info("新用户", zap.Any("wechatInfo", wechatInfo))
+	err = svc.repo.Create(ctx, domain.DMUser{
+		WechatInfo: wechatInfo,
+	})
+	if err != nil && !errors.Is(err, repository.ErrUserDuplicateEmail) {
+		return domain.DMUser{}, err
+	}
+	return svc.repo.FindByWechat(ctx, wechatInfo.OpenId)
 }

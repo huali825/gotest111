@@ -24,6 +24,7 @@ type UserRepository interface {
 	UpdateNonZeroFields(ctx context.Context, user domain.DMUser) error
 	FindByPhone(ctx context.Context, phone string) (domain.DMUser, error)
 	FindById(ctx context.Context, uid int64) (domain.DMUser, error)
+	FindByWechat(ctx context.Context, openId string) (domain.DMUser, error)
 }
 
 type CachedUserRepository struct {
@@ -119,4 +120,12 @@ func (repo *CachedUserRepository) FindById(ctx context.Context, uid int64) (doma
 		log.Println(err)
 	}
 	return du, nil
+}
+
+func (repo *CachedUserRepository) FindByWechat(ctx context.Context, openId string) (domain.DMUser, error) {
+	ue, err := repo.dao.FindByWechat(ctx, openId)
+	if err != nil {
+		return domain.DMUser{}, err
+	}
+	return repo.toDomain(ue), nil
 }

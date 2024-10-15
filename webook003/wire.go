@@ -10,6 +10,7 @@ import (
 	"goworkwebook/webook003/internal/repository/dao"
 	"goworkwebook/webook003/internal/service"
 	"goworkwebook/webook003/internal/web"
+	ijwt "goworkwebook/webook003/internal/web/jwt"
 	"goworkwebook/webook003/ioc"
 )
 
@@ -29,12 +30,14 @@ func InitWebServer() *gin.Engine {
 
 		// Service 部分
 		ioc.InitSMSService,
+		ioc.InitWechatService,
 		service.NewUserService,
 		service.NewCodeService,
 
 		// handler 部分
 		web.NewUserHandler,
-
+		ijwt.NewRedisJWTHandler,
+		web.NewOAuth2WechatHandler,
 		ioc.InitGinMiddlewares,
 		ioc.InitWebServer,
 	)
