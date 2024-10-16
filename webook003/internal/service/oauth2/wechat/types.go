@@ -38,20 +38,25 @@ func (s *service) AuthURL(ctx context.Context, state string) (string, error) {
 	return fmt.Sprintf(authURLPattern, s.appID, redirectURL, state), nil
 }
 
+// VerifyCode 函数用于验证微信的授权码
 func (s *service) VerifyCode(ctx context.Context,
 	code string) (domain.WechatInfo, error) {
+	// 构造获取 access_token 的 URL
 	accessTokenUrl := fmt.Sprintf(`https://api.weixin.qq.com/sns/oauth2/access_token?appid=%s&secret=%s&code=%s&grant_type=authorization_code`,
 		s.appID, s.appSecret, code)
+	// 创建 GET 请求
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, accessTokenUrl, nil)
 	if err != nil {
 		return domain.WechatInfo{}, err
 	}
+	// 发送请求
 	httpResp, err := s.client.Do(req)
 	if err != nil {
 		return domain.WechatInfo{}, err
 	}
 
 	var res Result
+	// 解析响应
 	err = json.NewDecoder(httpResp.Body).Decode(&res)
 	if err != nil {
 		// 转 JSON 为结构体出错
@@ -61,6 +66,7 @@ func (s *service) VerifyCode(ctx context.Context,
 		return domain.WechatInfo{},
 			fmt.Errorf("调用微信接口失败 errcode %d, errmsg %s", res.ErrCode, res.ErrMsg)
 	}
+	// 返回微信信息
 	return domain.WechatInfo{
 		UnionId: res.UnionId,
 		OpenId:  res.OpenId,

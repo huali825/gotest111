@@ -21,7 +21,8 @@ type OAuth2WechatHandler struct {
 	stateCookieName string
 }
 
-func NewOAuth2WechatHandler(svc wechat.Service,
+func NewOAuth2WechatHandler(
+	svc wechat.Service,
 	hdl ijwt.Handler,
 	userSvc service.UserService) *OAuth2WechatHandler {
 	return &OAuth2WechatHandler{
@@ -41,61 +42,77 @@ func (o *OAuth2WechatHandler) RegisterRoutes(server *gin.Engine) {
 
 // Auth2URL 构建扫码登录url
 func (o *OAuth2WechatHandler) Auth2URL(ctx *gin.Context) {
-	//导入一个名为shortuuid的Go库，该库用于生成简洁的UUID。UUID（通用唯一标识符）
+	//导入一个名为short uuid的Go库，该库用于生成简洁的UUID。UUID（通用唯一标识符）
 	state := uuid.New()
+	//调用svc的AuthURL方法，传入state，获取跳转URL
 	val, err := o.svc.AuthURL(ctx, state)
 	if err != nil {
+		//如果获取跳转URL失败，返回错误信息
 		ctx.JSON(http.StatusOK, Result{
 			Msg:  "构造跳转URL失败",
 			Code: 5,
 		})
 		return
 	}
+	//调用setStateCookie方法，将state存入cookie中
 	err = o.setStateCookie(ctx, state)
 	if err != nil {
+		//如果存入cookie失败，返回错误信息
 		ctx.JSON(http.StatusOK, Result{
 			Msg:  "服务器异常",
 			Code: 5,
 		})
 	}
+	//返回跳转URL
 	ctx.JSON(http.StatusOK, Result{
 		Data: val,
 	})
 }
 
+// Callback 函数用于处理微信OAuth2回调请求
 func (o *OAuth2WechatHandler) Callback(ctx *gin.Context) {
+	// 验证state参数，防止CSRF攻击
 	err := o.verifyState(ctx)
 	if err != nil {
+		// 如果验证失败，返回错误信息
 		ctx.JSON(http.StatusOK, Result{
 			Msg:  "非法请求",
 			Code: 4,
 		})
 		return
 	}
-	// 你校验不校验都可以
+	// 获取code参数，用于获取微信用户信息
 	code := ctx.Query("code")
+	// 获取state参数，用于防止CSRF攻击
 	// state := ctx.Query("state")
+	// 使用code参数获取微信用户信息
 	wechatInfo, err := o.svc.VerifyCode(ctx, code)
 	if err != nil {
+		// 如果获取失败，返回错误信息
 		ctx.JSON(http.StatusOK, Result{
 			Msg:  "授权码有误",
 			Code: 4,
 		})
 		return
 	}
+	// 根据微信用户信息查找或创建用户
 	u, err := o.userSvc.FindOrCreateByWechat(ctx, wechatInfo)
 	if err != nil {
+		// 如果查找或创建失败，返回错误信息
 		ctx.JSON(http.StatusOK, Result{
 			Msg:  "系统错误",
 			Code: 5,
 		})
 		return
 	}
+	// 设置登录token
 	err = o.SetLoginToken(ctx, u.Id)
 	if err != nil {
+		// 如果设置失败，返回错误信息
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
+	// 返回成功信息
 	ctx.JSON(http.StatusOK, Result{
 		Msg: "OK",
 	})
