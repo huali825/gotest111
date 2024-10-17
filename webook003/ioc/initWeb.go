@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"goworkwebook/webook003/internal/web"
+	ijwt "goworkwebook/webook003/internal/web/jwt"
 	"goworkwebook/webook003/internal/web/middleware"
 	"strings"
 	"time"
@@ -22,7 +23,7 @@ func InitWebServer(
 	return server
 }
 
-func InitGinMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
+func InitGinMiddlewares(redisClient redis.Cmdable, hdl ijwt.Handler) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		func(context *gin.Context) {
 			println("这是我的 Middleware 1")
@@ -36,7 +37,7 @@ func InitGinMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
 			// 允许的头部
 			AllowHeaders: []string{"Origin", "Content-Type", "Authorization"},
 			// 暴露的头部
-			ExposeHeaders: []string{"x-jwt-token"},
+			ExposeHeaders: []string{"x-jwt-token", "x-refresh-token"},
 			// 是否允许发送凭证
 			AllowCredentials: true,
 			// 最大缓存时间
@@ -56,7 +57,7 @@ func InitGinMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
 		//ratelimit.NewBuilder(redisClient, time.Second, 1).Build(),
 
 		func(context *gin.Context) { println("jwt登录校验") },
-		middleware.NewLoginJWTMiddlewareBuilder().
+		middleware.NewLoginJWTMiddlewareBuilder(hdl).
 			IgnorePaths("/users/signup").
 			IgnorePaths("/users/login").
 			IgnorePaths("/users/login_sms/code/send").

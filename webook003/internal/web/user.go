@@ -8,6 +8,7 @@ import (
 	jwt "github.com/golang-jwt/jwt/v5"
 	"goworkwebook/webook003/internal/domain"
 	"goworkwebook/webook003/internal/service"
+	ijwt "goworkwebook/webook003/internal/web/jwt"
 	"net/http"
 	"time"
 )
@@ -20,14 +21,19 @@ const (
 )
 
 type UserHandler struct {
+	ijwt.Handler     // 组合
 	svc              service.UserService
 	codeSvc          service.CodeService
 	emailRegexRxp    *regexp.Regexp
 	passwordRegexRxp *regexp.Regexp
 }
 
-func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
+func NewUserHandler(
+	svc service.UserService,
+	codeSvc service.CodeService,
+	hdl ijwt.Handler) *UserHandler {
 	return &UserHandler{
+		Handler:          hdl,
 		svc:              svc,
 		codeSvc:          codeSvc,
 		emailRegexRxp:    regexp.MustCompile(emailRegexPattern, regexp.None),
@@ -41,14 +47,17 @@ func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug.POST("/signup", h.SignUp)
 	ug.POST("/login", h.LoginJWT)
 	//ug.POST("/users/login", h.Login)
+	ug.POST("/logout", h.LogoutJWT)
 	ug.POST("/edit", h.Edit)
 	ug.GET("/profile", h.Profile)
+	ug.GET("/refresh_token", h.RefreshToken)
 
 	// 手机验证码登录相关功能
 	ug.POST("/login_sms/code/send", h.SendSMSLoginCode)
 	ug.POST("/login_sms", h.LoginSMS)
 }
 
+// SignUp 注册
 func (h *UserHandler) SignUp(ctx *gin.Context) {
 	type SignUpReq struct {
 		Email           string `json:"email"`
@@ -98,96 +107,28 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 	}
 	DmUser, err := h.svc.Login(ctx, req.Email, req.Password)
 
-	switch err {
-	case nil:
-		h.setJWTToken(ctx, DmUser.Id)
-		// 返回登录成功
+	switch {
+	case err == nil:
+		err = h.SetLoginToken(ctx, DmUser.Id)
+		if err != nil {
+			ctx.String(http.StatusOK, "系统错误")
+			return
+		}
 		ctx.String(http.StatusOK, "登录成功")
-	case service.ErrInvalidUserOrPassword:
+	case errors.Is(err, service.ErrInvalidUserOrPassword):
 		ctx.String(http.StatusOK, "用户名或者密码不对")
 	default:
 		ctx.String(http.StatusOK, "系统错误")
 	}
 }
 
-func (h *UserHandler) setJWTToken(ctx *gin.Context, uid int64) {
-	// 创建用户声明
-	uc := UserClaims{
-		Uid:       uid,                         // 用户ID
-		UserAgent: ctx.GetHeader("User-Agent"), //   使用user agent 防止 token 被劫持
-		RegisteredClaims: jwt.RegisteredClaims{
-			// 1 分钟过期
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 1)), // 过期时间
-		},
-	}
-	// 创建JWT
-	token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
-	// 签名JWT 加密
-	tokenStr, err := token.SignedString(JWTKey)
+func (h *UserHandler) LogoutJWT(ctx *gin.Context) {
+	err := h.ClearToken(ctx)
 	if err != nil {
-		// 签名失败，返回系统错误
-		ctx.String(http.StatusOK, "系统错误")
-	}
-	// 设置JWT头部
-	ctx.Header("x-jwt-token", tokenStr)
-}
-
-var JWTKey = []byte("k6CswdUm77WKcbM68UQUuxVsHSpTCwgK")
-
-type UserClaims struct {
-	jwt.RegisteredClaims
-	Uid       int64
-	UserAgent string
-}
-
-func (h *UserHandler) Login(context *gin.Context) {
-	type LoginReq struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-	var req LoginReq
-	if err := context.ShouldBindJSON(&req); err != nil {
-		context.String(http.StatusOK, "系统错误")
+		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
 		return
 	}
-
-	user, err := h.svc.Login(context, req.Email, req.Password)
-	if errors.Is(err, service.ErrInvalidUserOrPassword) {
-		context.String(http.StatusOK, "用户名或密码错误")
-		return
-	}
-	if err != nil {
-		context.String(http.StatusOK, "系统错误")
-		return
-	}
-
-	//登录成功后设置userid的值
-	sess := sessions.Default(context) //获取session
-	sess.Set("userId", user.Id)       //设置session
-	sess.Options(sessions.Options{
-		// 设置cookie的路径
-		Path: "",
-		// 设置cookie的域名
-		Domain: "",
-		// 设置cookie的最大有效期，单位为秒
-		MaxAge: 20, //单位秒
-		//MaxAge: 3600 * 24 * 7, //一周过期
-		// 设置cookie是否只在https协议下有效
-		Secure: false,
-		// 设置cookie是否只能通过http协议访问
-		HttpOnly: false,
-		// 设置cookie的SameSite属性，0表示不限制
-		SameSite: 0,
-	})
-	err = sess.Save() //保存session
-	if err != nil {
-		context.String(http.StatusOK, "系统错误")
-		return
-	}
-
-	//登录成功返回 状态200
-	context.String(http.StatusOK, "登录成功")
-	return
+	ctx.JSON(http.StatusOK, Result{Msg: "退出登录成功"})
 }
 
 func (h *UserHandler) Edit(ctx *gin.Context) {
@@ -207,7 +148,7 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 	}
 	//sess := sessions.Default(ctx)
 	//sess.Get("uid")
-	uc, ok := ctx.MustGet("user").(UserClaims)
+	uc, ok := ctx.MustGet("user").(ijwt.UserClaims)
 	if !ok {
 		//ctx.String(http.StatusOK, "系统错误")
 		ctx.AbortWithStatus(http.StatusUnauthorized)
@@ -238,7 +179,7 @@ func (h *UserHandler) Profile(ctx *gin.Context) {
 	//ctx.String(http.StatusOK, "这是 profile")
 	// 嵌入一段刷新过期时间的代码
 
-	uc, ok := ctx.MustGet("user").(UserClaims)
+	uc, ok := ctx.MustGet("user").(ijwt.UserClaims)
 	if !ok {
 		//ctx.String(http.StatusOK, "系统错误")
 		ctx.AbortWithStatus(http.StatusUnauthorized)
@@ -260,6 +201,39 @@ func (h *UserHandler) Profile(ctx *gin.Context) {
 		Email:    u.Email,
 		AboutMe:  u.AboutMe,
 		Birthday: u.Birthday.Format(time.DateOnly),
+	})
+}
+
+func (h *UserHandler) RefreshToken(ctx *gin.Context) {
+	// 约定，前端在 Authorization 里面带上这个 refresh_token
+	tokenStr := h.ExtractToken(ctx)
+	var rc ijwt.RefreshClaims
+	token, err := jwt.ParseWithClaims(tokenStr, &rc, func(token *jwt.Token) (interface{}, error) {
+		return ijwt.RCJWTKey, nil
+	})
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	if token == nil || !token.Valid {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	err = h.CheckSession(ctx, rc.Ssid)
+	if err != nil {
+		// token 无效或者 redis 有问题
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	err = h.SetJWTToken(ctx, rc.Uid, rc.Ssid)
+	if err != nil {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Msg: "OK",
 	})
 }
 
@@ -333,13 +307,18 @@ func (h *UserHandler) LoginSMS(ctx *gin.Context) {
 		})
 		return
 	}
-	h.setJWTToken(ctx, dmUser.Id)
+	err = h.SetLoginToken(ctx, dmUser.Id)
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
 	ctx.JSON(http.StatusOK, Result{
 		Msg: "登录成功",
 	})
 }
 
-// 检验邮箱密码格式
+// 分隔符===============分隔符
+// 检验邮箱密码格式 (我自己写的
 func (h *UserHandler) emailPasswordFormat(
 	ctx *gin.Context, email string, password string, password2 string) error {
 	isEmail, err := h.emailRegexRxp.MatchString(email)
@@ -365,4 +344,55 @@ func (h *UserHandler) emailPasswordFormat(
 		return errors.New("密码格式错误")
 	}
 	return nil
+}
+
+// Login 废弃的函数
+func (h *UserHandler) Login(context *gin.Context) {
+	type LoginReq struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var req LoginReq
+	if err := context.ShouldBindJSON(&req); err != nil {
+		context.String(http.StatusOK, "系统错误")
+		return
+	}
+
+	user, err := h.svc.Login(context, req.Email, req.Password)
+	if errors.Is(err, service.ErrInvalidUserOrPassword) {
+		context.String(http.StatusOK, "用户名或密码错误")
+		return
+	}
+	if err != nil {
+		context.String(http.StatusOK, "系统错误")
+		return
+	}
+
+	//登录成功后设置userid的值
+	sess := sessions.Default(context) //获取session
+	sess.Set("userId", user.Id)       //设置session
+	sess.Options(sessions.Options{
+		// 设置cookie的路径
+		Path: "",
+		// 设置cookie的域名
+		Domain: "",
+		// 设置cookie的最大有效期，单位为秒
+		MaxAge: 20, //单位秒
+		//MaxAge: 3600 * 24 * 7, //一周过期
+		// 设置cookie是否只在https协议下有效
+		Secure: false,
+		// 设置cookie是否只能通过http协议访问
+		HttpOnly: false,
+		// 设置cookie的SameSite属性，0表示不限制
+		SameSite: 0,
+	})
+	err = sess.Save() //保存session
+	if err != nil {
+		context.String(http.StatusOK, "系统错误")
+		return
+	}
+
+	//登录成功返回 状态200
+	context.String(http.StatusOK, "登录成功")
+	return
 }

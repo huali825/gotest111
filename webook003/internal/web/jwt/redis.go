@@ -38,15 +38,21 @@ func (h *RedisJWTHandler) CheckSession(ctx *gin.Context, ssid string) error {
 
 // 根据约定，token 在 Authorization 头部
 // Bearer XXXX
+// 从上下文中提取Token
 func (h *RedisJWTHandler) ExtractToken(ctx *gin.Context) string {
+	// 获取Authorization头部信息
 	authCode := ctx.GetHeader("Authorization")
+	// 如果Authorization头部信息为空，则返回空字符串
 	if authCode == "" {
 		return authCode
 	}
+	// 将Authorization头部信息按空格分割
 	segs := strings.Split(authCode, " ")
+	// 如果分割后的数组长度不为2，则返回空字符串
 	if len(segs) != 2 {
 		return ""
 	}
+	// 返回分割后的数组中的第二个元素，即Token
 	return segs[1]
 }
 
