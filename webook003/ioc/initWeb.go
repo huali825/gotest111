@@ -58,6 +58,7 @@ func InitGinMiddlewares(redisClient redis.Cmdable, hdl ijwt.Handler) []gin.Handl
 
 		func(context *gin.Context) { println("jwt登录校验") },
 		middleware.NewLoginJWTMiddlewareBuilder(hdl).
+			IgnorePaths("/hello").
 			IgnorePaths("/users/signup").
 			IgnorePaths("/users/login").
 			IgnorePaths("/users/login_sms/code/send").
