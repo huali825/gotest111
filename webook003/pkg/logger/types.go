@@ -1,5 +1,6 @@
 package logger
 
+// 第一种需要用户自己使用占位符
 type Logger interface {
 	Debug(msg string, args ...any)
 	Info(msg string, args ...any)
@@ -12,6 +13,7 @@ func example() {
 	l.Info("用户的微信 id %d", 123)
 }
 
+// zap风格, 日志参数都是有名字的通过一个struct来配套输出
 type LoggerV1 interface {
 	Debug(msg string, args ...Field)
 	Info(msg string, args ...Field)
@@ -30,8 +32,8 @@ func exampleV1() {
 	l.Info("这是一个新用户", Field{Key: "union_id", Val: 123})
 }
 
+// 它要去 args 必须是偶数，并且是以 key1,value1,key2,value2 的形式传递
 type LoggerV2 interface {
-	// 它要去 args 必须是偶数，并且是以 key1,value1,key2,value2 的形式传递
 	Debug(msg string, args ...any)
 	Info(msg string, args ...any)
 	Warn(msg string, args ...any)

@@ -6,6 +6,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	jwt "github.com/golang-jwt/jwt/v5"
+	"go.uber.org/zap"
 	"goworkwebook/webook003/internal/domain"
 	"goworkwebook/webook003/internal/service"
 	ijwt "goworkwebook/webook003/internal/web/jwt"
@@ -91,6 +92,7 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 
+	zap.L().Info("注册成功")
 	ctx.String(http.StatusOK, "注册成功")
 
 	//context.String(http.StatusOK, "Hello, this is signup")

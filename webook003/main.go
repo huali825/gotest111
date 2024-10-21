@@ -22,6 +22,8 @@ func main() {
 	server := InitWebServer()
 	server.GET("/hello", func(ctx *gin.Context) {
 		ctx.String(200, "hello world 你来了")
+
+		//打印日志
 		zap.L().Info("hello world")
 	})
 	err := server.Run(":8080")
