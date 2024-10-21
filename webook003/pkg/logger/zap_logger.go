@@ -6,7 +6,8 @@ type ZapLogger struct {
 	l *zap.Logger
 }
 
-// 下面的结构体方法的实现是 实现的 LoggerV1 接口
+//适配器模式: 将一个接口转换成另一个接口
+//下面的结构体方法的实现是 实现的 LoggerV1 接口
 // zap风格, 日志参数都是有名字的通过一个struct来配套输出
 //type LoggerV1 interface {
 //	Debug(msg string, args ...Field)
