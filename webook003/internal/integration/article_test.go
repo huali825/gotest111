@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 	"goworkwebook/webook003/internal/integration/startup"
+	"goworkwebook/webook003/internal/repository/dao"
 	ijwt "goworkwebook/webook003/internal/web/jwt"
 	"net/http"
 	"net/http/httptest"
@@ -81,7 +82,43 @@ func (s *ArticleHandlerSuite) TestEdit() {
 		wantCode int
 		wantRes  Result[int64]
 	}{
-		{},
+		{
+			name: "编辑文章",
+			before: func(t *testing.T) {
+
+			},
+			after: func(t *testing.T) {
+				// 定义一个dao.Article类型的变量art
+				var art dao.Article
+				// 在数据库中查找author_id为123的文章，并将结果赋值给art
+				err := s.db.Where("author_id=?", 123).
+					First(&art).Error
+				// 断言err为nil，即查找成功
+				assert.NoError(t, err)
+				// 断言art的创建时间大于0
+				assert.True(t, art.Ctime > 0)
+				// 断言art的更新时间大于0
+				assert.True(t, art.Utime > 0)
+				// 断言art的id大于0
+				assert.True(t, art.Id > 0)
+				// 断言art的标题为"我的标题"
+				assert.Equal(t, "我的标题", art.Title)
+				// 断言art的内容为"我的内容"
+				assert.Equal(t, "我的内容", art.Content)
+				// 断言art的作者id为123
+				assert.Equal(t, int64(123), art.AuthorId)
+			},
+			art: Article{
+				//Id:      0,
+				Title:   "我的标题",
+				Content: "我的内容",
+			},
+			wantCode: http.StatusOK,
+			wantRes: Result[int64]{
+				//Msg:  "ok",
+				Data: 1,
+			},
+		},
 	}
 
 	for _, tc := range testCase {

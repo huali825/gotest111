@@ -18,6 +18,12 @@ type ArticleGORMDAO struct {
 	db *gorm.DB
 }
 
+func NewArticleGORMDAO(db *gorm.DB) ArticleDAO {
+	return &ArticleGORMDAO{
+		db: db,
+	}
+}
+
 func (a *ArticleGORMDAO) Sync(ctx context.Context, art Article) (int64, error) {
 	var id = art.Id
 	err := a.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -119,18 +125,17 @@ func (a *ArticleGORMDAO) UpdateById(ctx context.Context, art Article) error {
 	return nil
 }
 
+// Insert 在ArticleGORMDAO结构体中定义Insert方法，用于向数据库中插入一条Article记录
 func (a *ArticleGORMDAO) Insert(ctx context.Context, art Article) (int64, error) {
+	// 获取当前时间戳
 	now := time.Now().UnixMilli()
+	// 将当前时间戳赋值给Article的创建时间和更新时间
 	art.Ctime = now
 	art.Utime = now
+	// 使用WithContext方法将上下文传递给数据库，并使用Create方法创建一条Article记录
 	err := a.db.WithContext(ctx).Create(&art).Error
+	// 返回Article的Id和错误信息
 	return art.Id, err
-}
-
-func NewArticleGORMDAO(db *gorm.DB) ArticleDAO {
-	return &ArticleGORMDAO{
-		db: db,
-	}
 }
 
 type Article struct {

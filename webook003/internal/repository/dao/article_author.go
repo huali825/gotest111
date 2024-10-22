@@ -14,6 +14,12 @@ type ArticleGORMAuthorDAO struct {
 	db *gorm.DB
 }
 
+func NewArticleGORMAuthorDAO(db *gorm.DB) ArticleAuthorDAO {
+	return &ArticleGORMAuthorDAO{
+		db: db,
+	}
+}
+
 func (a *ArticleGORMAuthorDAO) Create(ctx context.Context, art Article) (int64, error) {
 	//TODO implement me
 	panic("implement me")
@@ -22,10 +28,4 @@ func (a *ArticleGORMAuthorDAO) Create(ctx context.Context, art Article) (int64, 
 func (a *ArticleGORMAuthorDAO) Update(ctx context.Context, art Article) error {
 	//TODO implement me
 	panic("implement me")
-}
-
-func NewArticleGORMAuthorDAO(db *gorm.DB) ArticleAuthorDAO {
-	return &ArticleGORMAuthorDAO{
-		db: db,
-	}
 }
