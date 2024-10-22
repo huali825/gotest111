@@ -61,7 +61,8 @@ func (h *ArticleHandler) Edit(ctx *gin.Context) {
 	// 如果保存失败，返回错误信息
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
-			Msg: "系统错误",
+			Code: 5,
+			Msg:  "系统错误",
 		})
 		//使用Error的示例
 		h.l.Error("保存文章数据失败",

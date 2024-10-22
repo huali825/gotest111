@@ -36,6 +36,7 @@ func TestArticle(t *testing.T) {
 	suite.Run(t, &ArticleHandlerSuite{})
 }
 
+// SetupSuite函数用于初始化测试套件
 func (s *ArticleHandlerSuite) SetupSuite() {
 	//s.server = startup.InitWebServer()
 
@@ -58,10 +59,15 @@ func (s *ArticleHandlerSuite) SetupSuite() {
 	s.server = server
 }
 
+// TearDownTest函数用于在测试结束后清理数据库
 func (s *ArticleHandlerSuite) TearDownTest() {
+	// 清空articles表
 	err := s.db.Exec("truncate table `articles`").Error
+	// 断言没有错误
 	assert.NoError(s.T(), err)
+	// 清空published_articles表
 	err = s.db.Exec("truncate table `published_articles`").Error
+	// 断言没有错误
 	assert.NoError(s.T(), err)
 }
 
