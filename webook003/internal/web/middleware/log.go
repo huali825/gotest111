@@ -8,28 +8,33 @@ import (
 	"time"
 )
 
+// LogMiddlewareBuilder 是一个用于构建日志中间件的构建器
 type LogMiddlewareBuilder struct {
-	logFn         func(ctx context.Context, l AccessLog)
-	allowReqBody  bool
-	allowRespBody bool
+	logFn         func(ctx context.Context, l AccessLog) // 日志函数
+	allowReqBody  bool                                   // 是否允许记录请求体
+	allowRespBody bool                                   // 是否允许记录响应体
 }
 
+// NewLogMiddlewareBuilder 创建一个新的 LogMiddlewareBuilder
 func NewLogMiddlewareBuilder(logFn func(ctx context.Context, l AccessLog)) *LogMiddlewareBuilder {
 	return &LogMiddlewareBuilder{
 		logFn: logFn,
 	}
 }
 
+// AllowReqBody 允许记录请求体
 func (l *LogMiddlewareBuilder) AllowReqBody() *LogMiddlewareBuilder {
 	l.allowReqBody = true
 	return l
 }
 
+// AllowRespBody 允许记录响应体
 func (l *LogMiddlewareBuilder) AllowRespBody() *LogMiddlewareBuilder {
 	l.allowRespBody = true
 	return l
 }
 
+// Build 构建日志中间件
 func (l *LogMiddlewareBuilder) Build() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		path := ctx.Request.URL.Path
@@ -75,25 +80,29 @@ func (l *LogMiddlewareBuilder) Build() gin.HandlerFunc {
 	}
 }
 
+// AccessLog 访问日志结构体
 type AccessLog struct {
-	Path     string        `json:"path"`
-	Method   string        `json:"method"`
-	ReqBody  string        `json:"req_body"`
-	Status   int           `json:"status"`
-	RespBody string        `json:"resp_body"`
-	Duration time.Duration `json:"duration"`
+	Path     string        `json:"path"`      // 请求路径
+	Method   string        `json:"method"`    // 请求方法
+	ReqBody  string        `json:"req_body"`  // 请求体
+	Status   int           `json:"status"`    // 响应状态码
+	RespBody string        `json:"resp_body"` // 响应体
+	Duration time.Duration `json:"duration"`  // 请求耗时
 }
 
+// responseWriter 自定义的响应写入器
 type responseWriter struct {
 	gin.ResponseWriter
 	al *AccessLog
 }
 
+// Write 写入响应体
 func (w *responseWriter) Write(data []byte) (int, error) {
 	w.al.RespBody = string(data)
 	return w.ResponseWriter.Write(data)
 }
 
+// WriteHeader 写入响应状态码
 func (w *responseWriter) WriteHeader(statusCode int) {
 	w.al.Status = statusCode
 	w.ResponseWriter.WriteHeader(statusCode)

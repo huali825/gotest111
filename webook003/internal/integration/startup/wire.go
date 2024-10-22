@@ -10,13 +10,21 @@ import (
 	"goworkwebook/webook003/internal/repository/dao"
 	"goworkwebook/webook003/internal/service"
 	"goworkwebook/webook003/internal/web"
+	ijwt "goworkwebook/webook003/internal/web/jwt"
 	"goworkwebook/webook003/ioc"
 )
+
+// thirdPartySet 定义了第三方依赖
+var thirdPartySet = wire.NewSet( // 第三方依赖
+	InitRedis, InitDB2,
+	InitLogger)
 
 func InitWebServer() *gin.Engine {
 	wire.Build(
 		// 第三方依赖
-		InitRedis, ioc.InitDB,
+		//InitRedis, InitDB2, InitLogger,
+		thirdPartySet,
+
 		// DAO 部分
 		dao.NewUserDAO,
 
@@ -29,14 +37,27 @@ func InitWebServer() *gin.Engine {
 
 		// Service 部分
 		ioc.InitSMSService,
+		ioc.InitWechatService,
 		service.NewUserService,
 		service.NewCodeService,
 
 		// handler 部分
 		web.NewUserHandler,
-
+		ijwt.NewRedisJWTHandler,
+		web.NewOAuth2WechatHandler,
 		ioc.InitGinMiddlewares,
 		ioc.InitWebServer,
 	)
 	return gin.Default()
+}
+
+// InitArticleHandler 初始化ArticleHandler
+func InitArticleHandler() *web.ArticleHandler {
+	wire.Build(
+		thirdPartySet,
+		dao.NewArticleGORMDAO,
+		service.NewArticleService,
+		web.NewArticleHandler,
+		repository.NewCachedArticleRepository)
+	return &web.ArticleHandler{}
 }
