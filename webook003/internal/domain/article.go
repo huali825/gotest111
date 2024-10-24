@@ -1,11 +1,27 @@
 package domain
 
+import "time"
+
 type Article struct {
 	Id      int64
 	Title   string
 	Content string
 	Author  Author
 	Status  ArticleStatus
+	Ctime   time.Time
+	Utime   time.Time
+}
+
+// Abstract 函数用于获取文章的摘要
+func (a Article) Abstract() string {
+	// 将文章内容转换为 rune 类型
+	str := []rune(a.Content)
+	// 只取部分作为摘要
+	if len(str) > 128 {
+		str = str[:128]
+	}
+	// 返回摘要
+	return string(str)
 }
 
 type Author struct {

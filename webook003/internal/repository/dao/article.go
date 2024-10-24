@@ -13,6 +13,7 @@ type ArticleDAO interface {
 	UpdateById(ctx context.Context, entity IsDaoArticle) error
 	Sync(ctx context.Context, entity IsDaoArticle) (int64, error)
 	SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error
+	GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]IsDaoArticle, error)
 }
 
 type ArticleGORMDAO struct {
@@ -23,6 +24,17 @@ func NewArticleGORMDAO(db *gorm.DB) ArticleDAO {
 	return &ArticleGORMDAO{
 		db: db,
 	}
+}
+
+func (a *ArticleGORMDAO) GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]IsDaoArticle, error) {
+	var arts []IsDaoArticle
+	err := a.db.WithContext(ctx).
+		Where("author_id = ?", uid).
+		Offset(offset).Limit(limit).
+		// a ASC, B DESC
+		Order("utime DESC").
+		Find(&arts).Error
+	return arts, err
 }
 
 func (a *ArticleGORMDAO) SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error {
@@ -49,26 +61,38 @@ func (a *ArticleGORMDAO) SyncStatus(ctx context.Context, uid int64, id int64, st
 	})
 }
 
+// Sync 函数用于同步文章数据，根据文章的id判断是更新还是插入
 func (a *ArticleGORMDAO) Sync(ctx context.Context, art IsDaoArticle) (int64, error) {
+	// 获取文章的id
 	var id = art.Id
+	// 开始事务
 	err := a.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var (
 			err error
 		)
+		// 创建一个新的ArticleGORMDAO实例
 		dao := NewArticleGORMDAO(tx)
+		// 如果id大于0，则更新文章
 		if id > 0 {
 			err = dao.UpdateById(ctx, art)
+			// 否则，插入文章
 		} else {
 			id, err = dao.Insert(ctx, art)
 		}
+		// 如果有错误，则返回错误
 		if err != nil {
 			return err
 		}
+		// 设置文章的id
 		art.Id = id
+		// 获取当前时间
 		now := time.Now().UnixMilli()
+		// 创建一个PublishedArticle实例
 		pubArt := PublishedArticle(art)
+		// 设置创建时间和更新时间
 		pubArt.Ctime = now
 		pubArt.Utime = now
+		// 在事务中创建PublishedArticle实例，如果id冲突，则更新
 		err = tx.Clauses(clause.OnConflict{
 			// 对MySQL不起效，但是可以兼容别的方言
 			// INSERT xxx ON DUPLICATE KEY SET `title`=?
@@ -82,11 +106,12 @@ func (a *ArticleGORMDAO) Sync(ctx context.Context, art IsDaoArticle) (int64, err
 				"status":  pubArt.Status,
 			}),
 		}).Create(&pubArt).Error
+		// 返回错误
 		return err
 	})
+	// 返回文章的id和错误
 	return id, err
 }
-
 func (a *ArticleGORMDAO) SyncV1(ctx context.Context, art IsDaoArticle) (int64, error) {
 	tx := a.db.WithContext(ctx).Begin()
 	if tx.Error != nil {

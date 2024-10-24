@@ -97,6 +97,11 @@ func (m *MongoDBArticleDAO) SyncStatus(ctx context.Context, uid int64, id int64,
 	return err
 }
 
+func (m *MongoDBArticleDAO) GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]IsDaoArticle, error) {
+	//todo
+	return nil, nil
+}
+
 func NewMongoDBArticleDAO(mdb *mongo.Database, node *snowflake.Node) *MongoDBArticleDAO {
 	return &MongoDBArticleDAO{
 		node:    node,
