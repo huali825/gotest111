@@ -107,8 +107,8 @@ func (c *CachedArticleRepository) Create(ctx context.Context, art domain.Article
 //	}
 //}
 
-func (c *CachedArticleRepository) toEntity(art domain.Article) dao.Article {
-	return dao.Article{
+func (c *CachedArticleRepository) toEntity(art domain.Article) dao.IsDaoArticle {
+	return dao.IsDaoArticle{
 		Id:       art.Id,
 		Title:    art.Title,
 		Content:  art.Content,

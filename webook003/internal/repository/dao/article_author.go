@@ -6,8 +6,8 @@ import (
 )
 
 type ArticleAuthorDAO interface {
-	Create(ctx context.Context, art Article) (int64, error)
-	Update(ctx context.Context, art Article) error
+	Create(ctx context.Context, art IsDaoArticle) (int64, error)
+	Update(ctx context.Context, art IsDaoArticle) error
 }
 
 type ArticleGORMAuthorDAO struct {
@@ -20,12 +20,12 @@ func NewArticleGORMAuthorDAO(db *gorm.DB) ArticleAuthorDAO {
 	}
 }
 
-func (a *ArticleGORMAuthorDAO) Create(ctx context.Context, art Article) (int64, error) {
+func (a *ArticleGORMAuthorDAO) Create(ctx context.Context, art IsDaoArticle) (int64, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (a *ArticleGORMAuthorDAO) Update(ctx context.Context, art Article) error {
+func (a *ArticleGORMAuthorDAO) Update(ctx context.Context, art IsDaoArticle) error {
 	//TODO implement me
 	panic("implement me")
 }

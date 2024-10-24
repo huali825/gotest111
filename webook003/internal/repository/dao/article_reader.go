@@ -7,7 +7,7 @@ import (
 
 type ArticleReaderDAO interface {
 	// Upsert INSERT or UPDATE
-	Upsert(ctx context.Context, art Article) error
+	Upsert(ctx context.Context, art IsDaoArticle) error
 	UpsertV2(ctx context.Context, art PublishedArticle) error
 }
 
@@ -19,7 +19,7 @@ func NewArticleGORMReaderDAO(db *gorm.DB) ArticleReaderDAO {
 	return &ArticleGORMReaderDAO{db: db}
 }
 
-func (a *ArticleGORMReaderDAO) Upsert(ctx context.Context, art Article) error {
+func (a *ArticleGORMReaderDAO) Upsert(ctx context.Context, art IsDaoArticle) error {
 	//TODO implement me
 	panic("implement me")
 }

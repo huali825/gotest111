@@ -52,7 +52,7 @@ func (s *ArticleHandlerSuite) SetupSuite() {
 	// 初始化数据库
 	s.db = startup.InitDB2()
 	// 初始化文章处理器
-	hdl := startup.InitArticleHandler()
+	hdl := startup.InitArticleHandler(dao.NewArticleGORMDAO(s.db))
 	// 注册路由
 	hdl.RegisterRoutes(server)
 	// 将服务器赋值给s.server
@@ -95,7 +95,7 @@ func (s *ArticleHandlerSuite) TestEdit() {
 			},
 			after: func(t *testing.T) {
 				// 定义一个dao.Article类型的变量art
-				var art dao.Article
+				var art dao.IsDaoArticle
 				// 在数据库中查找author_id为123的文章，并将结果赋值给art
 				err := s.db.Where("author_id=?", 123).
 					First(&art).Error
@@ -129,7 +129,7 @@ func (s *ArticleHandlerSuite) TestEdit() {
 			name: "修改帖子",
 			before: func(t *testing.T) {
 				// 假装数据库已经有这个帖子
-				err := s.db.Create(&dao.Article{
+				err := s.db.Create(&dao.IsDaoArticle{
 					Id:       11,
 					Title:    "我的标题(原有的",
 					Content:  "我的内容(原有的",
@@ -142,7 +142,7 @@ func (s *ArticleHandlerSuite) TestEdit() {
 			},
 			after: func(t *testing.T) {
 				// 定义一个dao.Article类型的变量art
-				var art dao.Article
+				var art dao.IsDaoArticle
 				// 在数据库中查找author_id为123的文章，并将结果赋值给art
 				err := s.db.Where("id=?", 11).
 					First(&art).Error
@@ -152,7 +152,7 @@ func (s *ArticleHandlerSuite) TestEdit() {
 				assert.True(t, art.Utime > 789)
 
 				art.Utime = 0
-				assert.Equal(t, dao.Article{
+				assert.Equal(t, dao.IsDaoArticle{
 					Id:       11,
 					Title:    "新的标题",
 					Content:  "新的内容",
@@ -175,7 +175,7 @@ func (s *ArticleHandlerSuite) TestEdit() {
 			name: "攻击者修改别人的帖子",
 			before: func(t *testing.T) {
 				// 假装数据库已经有这个帖子
-				err := s.db.Create(&dao.Article{
+				err := s.db.Create(&dao.IsDaoArticle{
 					Id:       11,
 					Title:    "我的标题(789的标题",
 					Content:  "我的内容(789的内容", //123用户在修改789的文章数据
@@ -188,7 +188,7 @@ func (s *ArticleHandlerSuite) TestEdit() {
 			},
 			after: func(t *testing.T) {
 				// 定义一个dao.Article类型的变量art
-				var art dao.Article
+				var art dao.IsDaoArticle
 				// 在数据库中查找author_id为123的文章，并将结果赋值给art
 				err := s.db.Where("id=?", 11).
 					First(&art).Error
@@ -198,7 +198,7 @@ func (s *ArticleHandlerSuite) TestEdit() {
 				//assert.True(t, art.Utime > 789)
 
 				//art.Utime = 0
-				assert.Equal(t, dao.Article{
+				assert.Equal(t, dao.IsDaoArticle{
 					Id:       11,
 					Title:    "我的标题(789的标题",
 					Content:  "我的内容(789的内容",

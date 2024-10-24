@@ -9,9 +9,9 @@ import (
 )
 
 type ArticleDAO interface {
-	Insert(ctx context.Context, art Article) (int64, error)
-	UpdateById(ctx context.Context, entity Article) error
-	Sync(ctx context.Context, entity Article) (int64, error)
+	Insert(ctx context.Context, art IsDaoArticle) (int64, error)
+	UpdateById(ctx context.Context, entity IsDaoArticle) error
+	Sync(ctx context.Context, entity IsDaoArticle) (int64, error)
 	SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error
 }
 
@@ -28,7 +28,7 @@ func NewArticleGORMDAO(db *gorm.DB) ArticleDAO {
 func (a *ArticleGORMDAO) SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error {
 	now := time.Now().UnixMilli()
 	return a.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		res := tx.Model(&Article{}).
+		res := tx.Model(&IsDaoArticle{}).
 			Where("id = ? and author_id = ?", uid, id).
 			Updates(map[string]any{
 				"utime":  now,
@@ -49,7 +49,7 @@ func (a *ArticleGORMDAO) SyncStatus(ctx context.Context, uid int64, id int64, st
 	})
 }
 
-func (a *ArticleGORMDAO) Sync(ctx context.Context, art Article) (int64, error) {
+func (a *ArticleGORMDAO) Sync(ctx context.Context, art IsDaoArticle) (int64, error) {
 	var id = art.Id
 	err := a.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var (
@@ -87,7 +87,7 @@ func (a *ArticleGORMDAO) Sync(ctx context.Context, art Article) (int64, error) {
 	return id, err
 }
 
-func (a *ArticleGORMDAO) SyncV1(ctx context.Context, art Article) (int64, error) {
+func (a *ArticleGORMDAO) SyncV1(ctx context.Context, art IsDaoArticle) (int64, error) {
 	tx := a.db.WithContext(ctx).Begin()
 	if tx.Error != nil {
 		return 0, tx.Error
@@ -132,7 +132,7 @@ func (a *ArticleGORMDAO) SyncV1(ctx context.Context, art Article) (int64, error)
 	return id, nil
 }
 
-func (a *ArticleGORMDAO) UpdateById(ctx context.Context, art Article) error {
+func (a *ArticleGORMDAO) UpdateById(ctx context.Context, art IsDaoArticle) error {
 	now := time.Now().UnixMilli()
 	res := a.db.WithContext(ctx).Model(&art).
 		Where("id = ? AND author_id = ?", art.Id, art.AuthorId).Updates(map[string]any{
@@ -153,7 +153,7 @@ func (a *ArticleGORMDAO) UpdateById(ctx context.Context, art Article) error {
 }
 
 // Insert 在ArticleGORMDAO结构体中定义Insert方法，用于向数据库中插入一条Article记录
-func (a *ArticleGORMDAO) Insert(ctx context.Context, art Article) (int64, error) {
+func (a *ArticleGORMDAO) Insert(ctx context.Context, art IsDaoArticle) (int64, error) {
 	// 获取当前时间戳
 	now := time.Now().UnixMilli()
 	// 将当前时间戳赋值给Article的创建时间和更新时间
@@ -165,22 +165,36 @@ func (a *ArticleGORMDAO) Insert(ctx context.Context, art Article) (int64, error)
 	return art.Id, err
 }
 
-type Article struct {
-	Id      int64  `gorm:"primaryKey,autoIncrement"`
-	Title   string `gorm:"type=varchar(4096)"`
-	Content string `gorm:"type=BLOB"`
+//type IsDaoArticle struct {
+//	Id      int64  `gorm:"primaryKey,autoIncrement"`
+//	Title   string `gorm:"type=varchar(4096)"`
+//	Content string `gorm:"type=BLOB"`
+//	// 我要根据创作者ID来查询
+//	AuthorId int64 `gorm:"index"`
+//
+//	Status uint8
+//
+//	Ctime int64
+//	// 更新时间
+//	Utime int64
+//}
+
+type IsDaoArticle struct {
+	Id      int64  `gorm:"primaryKey,autoIncrement" bson:"id,omitempty"`
+	Title   string `gorm:"type=varchar(4096)" bson:"title,omitempty"`
+	Content string `gorm:"type=BLOB" bson:"content,omitempty"`
 	// 我要根据创作者ID来查询
-	AuthorId int64 `gorm:"index"`
-
-	Status uint8
-
-	Ctime int64
+	AuthorId int64 `gorm:"index" bson:"author_id,omitempty"`
+	Status   uint8 `bson:"status,omitempty"`
+	Ctime    int64 `bson:"ctime,omitempty"`
 	// 更新时间
-	Utime int64
+	Utime int64 `bson:"utime,omitempty"`
 }
 
-type PublishedArticle Article
+// PublishedArticle 是一个结构体，用于表示已发布的文章
+// 这里的两个写法表示如何cp一个已有的结构体
+type PublishedArticle IsDaoArticle
 
 type PublishedArticleV1 struct {
-	Article
+	IsDaoArticle
 }

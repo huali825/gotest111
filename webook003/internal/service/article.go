@@ -46,7 +46,7 @@ func (a *articleService) Save(ctx context.Context, art domain.Article) (int64, e
 	return a.repo.Create(ctx, art)
 }
 
-//func (a *articleService) PublishV1(ctx context.Context, art domain.Article) (int64, error) {
+//func (a *articleService) PublishV1(ctx context.Context, art domain.IsDaoArticle) (int64, error) {
 //	// 想到这里要先操作制作库
 //	// 这里操作线上库
 //	var (
