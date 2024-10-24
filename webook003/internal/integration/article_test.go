@@ -89,7 +89,7 @@ func (s *ArticleHandlerSuite) TestEdit() {
 		wantRes  Result[int64]
 	}{
 		{
-			name: "编辑文章",
+			name: "新建帖子",
 			before: func(t *testing.T) {
 
 			},
@@ -123,6 +123,100 @@ func (s *ArticleHandlerSuite) TestEdit() {
 			wantRes: Result[int64]{
 				//Msg:  "ok",
 				Data: 1,
+			},
+		},
+		{
+			name: "修改帖子",
+			before: func(t *testing.T) {
+				// 假装数据库已经有这个帖子
+				err := s.db.Create(&dao.Article{
+					Id:       11,
+					Title:    "我的标题(原有的",
+					Content:  "我的内容(原有的",
+					AuthorId: 123,
+					Ctime:    456,
+					Utime:    789,
+				}).Error
+				assert.NoError(t, err)
+
+			},
+			after: func(t *testing.T) {
+				// 定义一个dao.Article类型的变量art
+				var art dao.Article
+				// 在数据库中查找author_id为123的文章，并将结果赋值给art
+				err := s.db.Where("id=?", 11).
+					First(&art).Error
+				// 断言err为nil，即查找成功
+				assert.NoError(t, err)
+				// 断言art的创建时间大于0
+				assert.True(t, art.Utime > 789)
+
+				art.Utime = 0
+				assert.Equal(t, dao.Article{
+					Id:       11,
+					Title:    "新的标题",
+					Content:  "新的内容",
+					AuthorId: 123,
+					Ctime:    456,
+				}, art)
+			},
+			art: Article{
+				Id:      11,
+				Title:   "新的标题",
+				Content: "新的内容",
+			},
+			wantCode: http.StatusOK,
+			wantRes: Result[int64]{
+				//Msg:  "ok",
+				Data: 11,
+			},
+		},
+		{
+			name: "攻击者修改别人的帖子",
+			before: func(t *testing.T) {
+				// 假装数据库已经有这个帖子
+				err := s.db.Create(&dao.Article{
+					Id:       11,
+					Title:    "我的标题(789的标题",
+					Content:  "我的内容(789的内容", //123用户在修改789的文章数据
+					AuthorId: 11324501,      //用户789
+					Ctime:    456,
+					Utime:    789,
+				}).Error
+				assert.NoError(t, err)
+
+			},
+			after: func(t *testing.T) {
+				// 定义一个dao.Article类型的变量art
+				var art dao.Article
+				// 在数据库中查找author_id为123的文章，并将结果赋值给art
+				err := s.db.Where("id=?", 11).
+					First(&art).Error
+				// 断言err为nil，即查找成功
+				assert.NoError(t, err)
+				// 断言art的创建时间大于0
+				//assert.True(t, art.Utime > 789)
+
+				//art.Utime = 0
+				assert.Equal(t, dao.Article{
+					Id:       11,
+					Title:    "我的标题(789的标题",
+					Content:  "我的内容(789的内容",
+					AuthorId: 11324501,
+					Ctime:    456,
+					Utime:    789,
+				}, art)
+			},
+			art: Article{
+				Id:      11,
+				Title:   "新的标题",
+				Content: "新的内容",
+			},
+			wantCode: http.StatusOK,
+			wantRes: Result[int64]{
+				Code: 5,
+				Msg:  "系统错误",
+				Data: 0,
 			},
 		},
 	}

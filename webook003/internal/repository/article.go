@@ -11,6 +11,7 @@ type ArticleRepository interface {
 	Create(ctx context.Context, art domain.Article) (int64, error)
 	Update(ctx context.Context, art domain.Article) error
 	Sync(ctx context.Context, art domain.Article) (int64, error)
+	SyncStatus(ctx context.Context, uid int64, id int64, status domain.ArticleStatus) error
 }
 
 type CachedArticleRepository struct {
@@ -20,6 +21,16 @@ type CachedArticleRepository struct {
 	authorDAO dao.ArticleAuthorDAO
 
 	db *gorm.DB
+}
+
+func NewCachedArticleRepository(dao dao.ArticleDAO) ArticleRepository {
+	return &CachedArticleRepository{
+		dao: dao,
+	}
+}
+
+func (c *CachedArticleRepository) SyncStatus(ctx context.Context, uid int64, id int64, status domain.ArticleStatus) error {
+	return c.dao.SyncStatus(ctx, uid, id, status.ToUint8())
 }
 
 func (c *CachedArticleRepository) Sync(ctx context.Context, art domain.Article) (int64, error) {
@@ -87,20 +98,14 @@ func (c *CachedArticleRepository) Create(ctx context.Context, art domain.Article
 	return c.dao.Insert(ctx, c.toEntity(art))
 }
 
-func NewCachedArticleRepository(dao dao.ArticleDAO) ArticleRepository {
-	return &CachedArticleRepository{
-		dao: dao,
-	}
-}
-
-func NewCachedArticleRepositoryV2(
-	readerDAO dao.ArticleReaderDAO,
-	authorDAO dao.ArticleAuthorDAO) *CachedArticleRepository {
-	return &CachedArticleRepository{
-		readerDAO: readerDAO,
-		authorDAO: authorDAO,
-	}
-}
+//func NewCachedArticleRepositoryV2(
+//	readerDAO dao.ArticleReaderDAO,
+//	authorDAO dao.ArticleAuthorDAO) *CachedArticleRepository {
+//	return &CachedArticleRepository{
+//		readerDAO: readerDAO,
+//		authorDAO: authorDAO,
+//	}
+//}
 
 func (c *CachedArticleRepository) toEntity(art domain.Article) dao.Article {
 	return dao.Article{
@@ -108,5 +113,6 @@ func (c *CachedArticleRepository) toEntity(art domain.Article) dao.Article {
 		Title:    art.Title,
 		Content:  art.Content,
 		AuthorId: art.Author.Id,
+		Status:   art.Status.ToUint8(),
 	}
 }
