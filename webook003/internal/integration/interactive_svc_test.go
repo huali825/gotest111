@@ -188,6 +188,7 @@ func (s *InteractiveTestSuite) TestIncrReadCnt() {
 	}
 }
 
+// 点赞功能 集成测试
 func (s *InteractiveTestSuite) TestLike() {
 	t := s.T()
 	testCases := []struct {
