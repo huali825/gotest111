@@ -8,6 +8,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/google/wire"
 	"goworkwebook/webook003/internal/repository"
 	"goworkwebook/webook003/internal/repository/cache"
 	"goworkwebook/webook003/internal/repository/dao"
@@ -27,7 +28,7 @@ func InitWebServer() *gin.Engine {
 	db := ioc.InitDB()
 	userDAO := dao.NewUserDAO(db)
 	userCache := cache.NewUserCache(cmdable)
-	userRepository := repository.NewUserRepository(userDAO, userCache)
+	userRepository := repository.NewCachedUserRepository(userDAO, userCache)
 	userService := service.NewUserService(userRepository)
 	codeCache := cache.NewCodeCache(cmdable)
 	codeRepository := repository.NewCodeRepository(codeCache)
@@ -38,9 +39,21 @@ func InitWebServer() *gin.Engine {
 	articleCache := cache.NewArticleRedisCache(cmdable)
 	articleRepository := repository.NewCachedArticleRepository(userRepository, articleDAO, articleCache)
 	articleService := service.NewArticleService(articleRepository)
-	articleHandler := web.NewArticleHandler(loggerV1, articleService)
-	wechatService := ioc.InitWechatService()
+	interactiveDAO := dao.NewGORMInteractiveDAO(db)
+	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
+	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
+	interactiveService := service.NewInteractiveService(interactiveRepository)
+	articleHandler := web.NewArticleHandler(loggerV1, articleService, interactiveService)
+	wechatService := ioc.InitWechatService(loggerV1)
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, handler, userService)
 	engine := ioc.InitWebServer(v, userHandler, articleHandler, oAuth2WechatHandler)
 	return engine
 }
+
+// wire.go:
+
+var userSvcProvider = wire.NewSet(dao.NewUserDAO, cache.NewUserCache, repository.NewCachedUserRepository, service.NewUserService)
+
+var articleSvcProvider = wire.NewSet(dao.NewArticleGORMDAO, cache.NewArticleRedisCache, repository.NewCachedArticleRepository, service.NewArticleService)
+
+var interactiveSvcSet = wire.NewSet(dao.NewGORMInteractiveDAO, cache.NewInteractiveRedisCache, repository.NewCachedInteractiveRepository, service.NewInteractiveService)

@@ -24,11 +24,12 @@ type service struct {
 	l         logger.LoggerV1
 }
 
-func NewService(appID string, appSecret string) Service {
+func NewService(appID string, appSecret string, l logger.LoggerV1) Service {
 	return &service{
 		appID:     appID,
 		appSecret: appSecret,
 		client:    http.DefaultClient,
+		l:         l,
 	}
 }
 

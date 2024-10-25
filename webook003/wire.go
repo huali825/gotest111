@@ -14,35 +14,52 @@ import (
 	"goworkwebook/webook003/ioc"
 )
 
+var userSvcProvider = wire.NewSet(
+	dao.NewUserDAO,
+	cache.NewUserCache,
+	repository.NewCachedUserRepository,
+	service.NewUserService)
+
+var articleSvcProvider = wire.NewSet(
+	dao.NewArticleGORMDAO,
+	cache.NewArticleRedisCache,
+	repository.NewCachedArticleRepository,
+	service.NewArticleService)
+
+var interactiveSvcSet = wire.NewSet(
+	dao.NewGORMInteractiveDAO,
+	cache.NewInteractiveRedisCache,
+	repository.NewCachedInteractiveRepository,
+	service.NewInteractiveService,
+)
+
 func InitWebServer() *gin.Engine {
 	wire.Build(
 		// 第三方依赖
 		ioc.InitRedis, ioc.InitDB, ioc.InitLogger,
-		// DAO 部分
-		dao.NewUserDAO,
-		dao.NewArticleGORMDAO,
+		userSvcProvider,
+		articleSvcProvider,
+		interactiveSvcSet,
 
 		// cache 部分
-		cache.NewCodeCache, cache.NewUserCache,
-		cache.NewArticleRedisCache,
+		cache.NewCodeCache,
 
 		// repository 部分
-		repository.NewUserRepository,
 		repository.NewCodeRepository,
-		repository.NewCachedArticleRepository,
 
 		// Service 部分
 		ioc.InitSMSService,
 		ioc.InitWechatService,
-		service.NewUserService,
+		//ioc.InitWechatService,
 		service.NewCodeService,
-		service.NewArticleService,
 
 		// handler 部分
 		web.NewUserHandler,
+		web.NewArticleHandler,
+		//web.interactiveHandler, //在 NewArticleHandler 中初始化
+
 		ijwt.NewRedisJWTHandler,
 		web.NewOAuth2WechatHandler,
-		web.NewArticleHandler,
 		ioc.InitGinMiddlewares,
 		ioc.InitWebServer,
 	)

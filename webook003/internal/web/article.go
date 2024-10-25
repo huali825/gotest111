@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/gin-gonic/gin"
 	"goworkwebook/webook003/internal/domain"
@@ -15,16 +16,22 @@ import (
 var _ Handler = (*ArticleHandler)(nil)
 
 type ArticleHandler struct {
-	svc service.ArticleService
-	l   logger.LoggerV1
+	intrSvc service.InteractiveService
+	svc     service.ArticleService
+	l       logger.LoggerV1
+	biz     string
 }
 
 //  l logger.LoggerV1, svc service.ArticleService
 
-func NewArticleHandler(l logger.LoggerV1, svc service.ArticleService) *ArticleHandler {
+func NewArticleHandler(
+	l logger.LoggerV1, svc service.ArticleService,
+	intrSvc service.InteractiveService) *ArticleHandler {
 	return &ArticleHandler{
-		l:   l,
-		svc: svc,
+		l:       l,
+		svc:     svc,
+		intrSvc: intrSvc,
+		biz:     "article",
 	}
 }
 func (h *ArticleHandler) RegisterRoutes(server *gin.Engine) {
@@ -278,6 +285,19 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 			logger.Error(err))
 		return
 	}
+
+	go func() {
+		// 1. 如果你想摆脱原本主链路的超时控制，你就创建一个新的
+		// 2. 如果你不想，你就用 ctx
+		newCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		er := h.intrSvc.IncrReadCnt(newCtx, h.biz, art.Id)
+		if er != nil {
+			h.l.Error("更新阅读数失败",
+				logger.Int64("aid", art.Id),
+				logger.Error(err))
+		}
+	}()
 
 	ctx.JSON(http.StatusOK, Result{
 		Data: ArticleVo{
