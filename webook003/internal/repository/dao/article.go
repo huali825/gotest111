@@ -8,12 +8,17 @@ import (
 	"time"
 )
 
+var _ ArticleDAO = &ArticleGORMDAO{}
+
 type ArticleDAO interface {
 	Insert(ctx context.Context, art IsDaoArticle) (int64, error)
 	UpdateById(ctx context.Context, entity IsDaoArticle) error
 	Sync(ctx context.Context, entity IsDaoArticle) (int64, error)
 	SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error
 	GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]IsDaoArticle, error)
+
+	GetById(ctx context.Context, id int64) (IsDaoArticle, error)
+	GetPubById(ctx context.Context, id int64) (PublishedArticle, error)
 }
 
 type ArticleGORMDAO struct {
@@ -24,6 +29,21 @@ func NewArticleGORMDAO(db *gorm.DB) ArticleDAO {
 	return &ArticleGORMDAO{
 		db: db,
 	}
+}
+
+func (a *ArticleGORMDAO) GetPubById(ctx context.Context, id int64) (PublishedArticle, error) {
+	var res PublishedArticle
+	err := a.db.WithContext(ctx).
+		Where("id = ?", id).
+		First(&res).Error
+	return res, err
+}
+
+func (a *ArticleGORMDAO) GetById(ctx context.Context, id int64) (IsDaoArticle, error) {
+	var art IsDaoArticle
+	err := a.db.WithContext(ctx).
+		Where("id = ?", id).First(&art).Error
+	return art, err
 }
 
 func (a *ArticleGORMDAO) GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]IsDaoArticle, error) {

@@ -12,6 +12,7 @@ import (
 var ErrDuplicateEmail = repository.ErrUserDuplicateEmail
 var ErrInvalidUserOrPassword = errors.New("账号/邮箱或密码不对")
 
+//go:generate mockgen -source=./user.go -package=svcmocks -destination=./mocks/user.mock.go
 type UserService interface {
 	Signup(ctx context.Context, u domain.DMUser) error
 	Login(ctx context.Context, email string, password string) (domain.DMUser, error)

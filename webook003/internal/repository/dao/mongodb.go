@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var _ ArticleDAO = &MongoDBArticleDAO{}
+
 // MongoDBArticleDAO 结构体，用于存储 MongoDB 数据库中的文章信息
 type MongoDBArticleDAO struct {
 	node    *snowflake.Node   // 雪花算法生成的节点
@@ -98,8 +100,18 @@ func (m *MongoDBArticleDAO) SyncStatus(ctx context.Context, uid int64, id int64,
 }
 
 func (m *MongoDBArticleDAO) GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]IsDaoArticle, error) {
-	//todo
-	return nil, nil
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MongoDBArticleDAO) GetById(ctx context.Context, id int64) (IsDaoArticle, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MongoDBArticleDAO) GetPubById(ctx context.Context, id int64) (PublishedArticle, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func NewMongoDBArticleDAO(mdb *mongo.Database, node *snowflake.Node) *MongoDBArticleDAO {
