@@ -9,5 +9,6 @@ func InitTable(db *gorm.DB) error {
 		&User{},
 		&IsDaoArticle{},
 		&PublishedArticle{},
-		&Interactive{})
+		&Interactive{},
+		&UserLikeBiz{})
 }
