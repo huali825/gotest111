@@ -1,5 +1,6 @@
 package web
 
+// ArticleVo 文章视图对象
 type ArticleVo struct {
 	Id         int64  `json:"id,omitempty"`
 	Title      string `json:"title,omitempty"`
@@ -10,4 +11,10 @@ type ArticleVo struct {
 	Status     uint8  `json:"status,omitempty"`
 	Ctime      string `json:"ctime,omitempty"`
 	Utime      string `json:"utime,omitempty"`
+
+	ReadCnt    int64 `json:"readCnt"`
+	LikeCnt    int64 `json:"likeCnt"`
+	CollectCnt int64 `json:"collectCnt"`
+	Liked      bool  `json:"liked"`
+	Collected  bool  `json:"collected"`
 }
