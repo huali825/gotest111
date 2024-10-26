@@ -6,9 +6,12 @@ import "gorm.io/gorm"
 func InitTable(db *gorm.DB) error {
 	//return db.AutoMigrate(&User{}, &IsDaoArticle{}, &PublishedArticle{})
 	return db.AutoMigrate(
-		&User{},
-		&IsDaoArticle{},
-		&PublishedArticle{},
-		&Interactive{},
-		&UserLikeBiz{})
+		&User{},              //用户表
+		&IsDaoArticle{},      //草稿文章表
+		&PublishedArticle{},  //已发布文章表
+		&Interactive{},       //阅读 点赞 收藏 计数表
+		&UserLikeBiz{},       //点赞表
+		&UserCollectionBiz{}, //收藏表
+	)
+
 }
