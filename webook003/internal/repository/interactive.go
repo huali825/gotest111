@@ -31,7 +31,8 @@ func NewCachedInteractiveRepository(
 	return &CachedInteractiveRepository{dao: dao, cache: cache}
 }
 
-func (c *CachedInteractiveRepository) Get(ctx context.Context, biz string, bizId int64) (domain.Interactive, error) {
+func (c *CachedInteractiveRepository) Get(
+	ctx context.Context, biz string, bizId int64) (domain.Interactive, error) {
 	intr, err := c.cache.Get(ctx, biz, bizId)
 	if err == nil {
 		return intr, nil
