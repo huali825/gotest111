@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"log"
+	"net/http"
 )
 
 func main() {
@@ -18,13 +19,18 @@ func main() {
 	initViperV1() // 初始化配置
 	initLogger()  // 初始化日志
 
-	server := InitWebServer()
+	app := InitWebServerAndCsm()
+	for _, c := range app.consumers {
+		err := c.Start()
+		if err != nil {
+			panic(err)
+		}
+	}
+	server := app.server
 	server.GET("/hello", func(ctx *gin.Context) {
-		ctx.String(200, "hello world 你来了")
-
-		//打印日志
-		zap.L().Info("hello world")
+		ctx.String(http.StatusOK, "hello，启动成功了！")
 	})
+
 	err := server.Run(":8080")
 	if err != nil {
 		log.Println(err)

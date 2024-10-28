@@ -19,6 +19,10 @@ type Handler[T any] struct {
 	fn func(msg *sarama.ConsumerMessage, data T) error
 }
 
+func NewHandler[T any](l logger.LoggerV1, fn func(msg *sarama.ConsumerMessage, event T) error) *Handler[T] {
+	return &Handler[T]{l: l, fn: fn}
+}
+
 // Setup 设置消费者组会话
 func (h Handler[T]) Setup(session sarama.ConsumerGroupSession) error {
 	return nil

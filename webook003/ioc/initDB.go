@@ -19,7 +19,9 @@ func InitDB() *gorm.DB {
 		panic(err)
 	}
 
+	// 初始化数据库的表
 	err = dao.InitTable(db)
+	// 如果初始化失败，则抛出异常
 	if err != nil {
 		panic(err)
 	}

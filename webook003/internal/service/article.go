@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"goworkwebook/webook003/internal/domain"
+	"goworkwebook/webook003/internal/events/article"
 	"goworkwebook/webook003/internal/repository"
 	"goworkwebook/webook003/pkg/logger"
 )
@@ -17,7 +18,8 @@ type ArticleService interface {
 }
 
 type articleService struct {
-	repo repository.ArticleRepository
+	repo     repository.ArticleRepository
+	producer article.Producer
 
 	// V1 写法专用
 	readerRepo repository.ArticleReaderRepository
@@ -25,13 +27,17 @@ type articleService struct {
 	l          logger.LoggerV1
 }
 
-func NewArticleService(repo repository.ArticleRepository) ArticleService {
+func NewArticleService(
+	repo repository.ArticleRepository, producer article.Producer) ArticleService {
 	return &articleService{
-		repo: repo,
+		repo:     repo,
+		producer: producer,
 	}
 }
 
+// GetPubById 根据id获取文章
 func (a *articleService) GetPubById(ctx context.Context, id int64) (domain.Article, error) {
+	// 调用repo的GetPubById方法，根据id获取文章
 	return a.repo.GetPubById(ctx, id)
 }
 
