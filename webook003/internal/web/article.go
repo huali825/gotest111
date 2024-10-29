@@ -1,7 +1,6 @@
 package web
 
 import (
-	"context"
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
@@ -266,9 +265,13 @@ func (h *ArticleHandler) List(ctx *gin.Context) {
 	})
 }
 
+// PubDetail 函数用于获取文章的详细信息
 func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
+	// 获取文章id
 	idstr := ctx.Param("id")
+	// 将id转换为int64类型
 	id, err := strconv.ParseInt(idstr, 10, 64)
+	// 如果转换失败，返回错误信息
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Msg:  "id 参数错误",
@@ -280,19 +283,22 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 		return
 	}
 
+	// 定义变量
 	var (
 		eg   errgroup.Group
 		art  domain.Article
 		intr domain.Interactive
 	)
 
+	// 获取用户信息
+	uc := ctx.MustGet("user").(jwt.UserClaims)
+	// 并发获取文章信息和互动信息
 	eg.Go(func() error {
 		var er error
-		art, er = h.svc.GetPubById(ctx, id)
+		art, er = h.svc.GetPubById(ctx, id, uc.Uid)
 		return er
 	})
 
-	uc := ctx.MustGet("user").(jwt.UserClaims)
 	eg.Go(func() error {
 		var er error
 		intr, er = h.intrSvc.Get(ctx, h.biz, id, uc.Uid)
@@ -301,6 +307,7 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 
 	// 等待结果
 	err = eg.Wait()
+	// 如果有错误，返回错误信息
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Msg:  "系统错误",
@@ -314,19 +321,21 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 		return
 	}
 
-	go func() {
-		// 1. 如果你想摆脱原本主链路的超时控制，你就创建一个新的
-		// 2. 如果你不想，你就用 ctx
-		newCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		er := h.intrSvc.IncrReadCnt(newCtx, h.biz, art.Id)
-		if er != nil {
-			h.l.Error("更新阅读数失败",
-				logger.Int64("aid", art.Id),
-				logger.Error(err))
-		}
-	}()
+	//// 异步更新阅读数
+	//go func() {
+	//	// 1. 如果你想摆脱原本主链路的超时控制，你就创建一个新的
+	//	// 2. 如果你不想，你就用 ctx
+	//	newCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+	//	defer cancel()
+	//	er := h.intrSvc.IncrReadCnt(newCtx, h.biz, art.Id)
+	//	if er != nil {
+	//		h.l.Error("更新阅读数失败",
+	//			logger.Int64("aid", art.Id),
+	//			logger.Error(err))
+	//	}
+	//}()
 
+	// 返回文章信息
 	ctx.JSON(http.StatusOK, Result{
 		Data: ArticleVo{
 			Id:    art.Id,
@@ -347,7 +356,6 @@ func (h *ArticleHandler) PubDetail(ctx *gin.Context) {
 		},
 	})
 }
-
 func (h *ArticleHandler) Like(c *gin.Context) {
 	type Req struct {
 		Id int64 `json:"id"`

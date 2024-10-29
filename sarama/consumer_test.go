@@ -10,17 +10,27 @@ import (
 	"time"
 )
 
+// 测试消费者
 func TestConsumer(t *testing.T) {
+	// 创建一个新的Sarama配置
 	cfg := sarama.NewConfig()
+	// 创建一个新的消费者组
 	consumer, err := sarama.NewConsumerGroup(addr, "demo", cfg)
+	// 断言没有错误
 	assert.NoError(t, err)
+	// 创建一个带有超时的上下文
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*10)
+	// 在函数结束时取消上下文
 	defer cancel()
+	// 记录开始时间
 	start := time.Now()
+	// 消费指定的主题
 	err = consumer.Consume(ctx,
 		[]string{"test_topic"}, ConsumerHandler{})
+	// 断言没有错误
 	assert.NoError(t, err)
-	t.Log(time.Since(start).String())
+	// 打印消费时间
+	t.Log("程序运行了:", time.Since(start).String())
 }
 
 type ConsumerHandler struct {
@@ -54,7 +64,7 @@ func (c ConsumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 		// 创建一个批次
 		batch := make([]*sarama.ConsumerMessage, 0, batchSize)
 		// 创建一个上下文，设置超时时间为5秒
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 		// 定义一个done变量，用于控制循环
 		var done = false
 		// 创建一个errgroup，用于并发处理

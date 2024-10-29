@@ -24,11 +24,14 @@ func NewSaramaSyncProducer(producer sarama.SyncProducer) Producer {
 	return &SaramaSyncProducer{producer: producer}
 }
 
+// ProduceReadEvent 函数用于将ReadEvent事件发送到Kafka主题
 func (s *SaramaSyncProducer) ProduceReadEvent(evt ReadEvent) error {
+	// 将ReadEvent事件转换为JSON格式
 	val, err := json.Marshal(evt)
 	if err != nil {
 		return err
 	}
+	// 将JSON格式的ReadEvent事件发送到Kafka主题
 	_, _, err = s.producer.SendMessage(&sarama.ProducerMessage{
 		Topic: TopicReadEvent,
 		Value: sarama.StringEncoder(val),

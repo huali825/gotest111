@@ -14,7 +14,7 @@ type ArticleService interface {
 	Withdraw(ctx context.Context, uid int64, id int64) error
 	GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]domain.Article, error)
 	GetById(ctx context.Context, id int64) (domain.Article, error)
-	GetPubById(ctx context.Context, id int64) (domain.Article, error)
+	GetPubById(ctx context.Context, id, uid int64) (domain.Article, error)
 }
 
 type articleService struct {
@@ -35,15 +35,34 @@ func NewArticleService(
 	}
 }
 
-// GetPubById 根据id获取文章
-func (a *articleService) GetPubById(ctx context.Context, id int64) (domain.Article, error) {
-	// 调用repo的GetPubById方法，根据id获取文章
-	return a.repo.GetPubById(ctx, id)
+func (a *articleService) GetPubById(ctx context.Context, id, uid int64) (domain.Article, error) {
+	// 根据id从数据库中获取文章
+	res, err := a.repo.GetPubById(ctx, id)
+
+	// 在后台发送一个消息
+	go func() {
+		if err == nil {
+			// 在这里发一个消息
+			er := a.producer.ProduceReadEvent(article.ReadEvent{
+				Aid: id,
+				Uid: uid,
+			})
+			if er != nil {
+				// 发送消息失败，记录错误日志
+				a.l.Error("发送 ReadEvent 失败",
+					logger.Int64("aid", id),
+					logger.Int64("uid", uid),
+					logger.Error(err))
+			}
+		}
+	}()
+	return res, err
 }
 
 func (a *articleService) GetById(ctx context.Context, id int64) (domain.Article, error) {
 	return a.repo.GetById(ctx, id)
 }
+
 func (a *articleService) Withdraw(ctx context.Context, uid int64, id int64) error {
 	return a.repo.SyncStatus(ctx, uid, id, domain.ArticleStatusPrivate)
 }

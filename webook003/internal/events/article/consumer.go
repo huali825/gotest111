@@ -36,9 +36,13 @@ func (i *InteractiveReadEventConsumer) Start() error {
 	return err
 }
 
+// Consume 函数用于处理从Kafka中消费的消息
 func (i *InteractiveReadEventConsumer) Consume(msg *sarama.ConsumerMessage,
 	event ReadEvent) error {
+	// 创建一个带有超时的上下文
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	// 在函数结束时取消上下文
 	defer cancel()
+	// 调用repo中的IncrReadCnt函数，增加文章的阅读次数
 	return i.repo.IncrReadCnt(ctx, "article", event.Aid)
 }
