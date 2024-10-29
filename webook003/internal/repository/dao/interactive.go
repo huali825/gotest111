@@ -20,6 +20,8 @@ type InteractiveDAO interface {
 	GetCollectInfo(ctx context.Context,
 		biz string, id int64, uid int64) (UserCollectionBiz, error)
 	Get(ctx context.Context, biz string, id int64) (Interactive, error)
+
+	BatchIncrReadCnt(ctx context.Context, bizs []string, bizIds []int64) error
 }
 
 type GORMInteractiveDAO struct {
@@ -28,6 +30,26 @@ type GORMInteractiveDAO struct {
 
 func NewGORMInteractiveDAO(db *gorm.DB) InteractiveDAO {
 	return &GORMInteractiveDAO{db: db}
+}
+
+// BatchIncrReadCnt 函数用于批量增加阅读次数
+func (dao *GORMInteractiveDAO) BatchIncrReadCnt(ctx context.Context, bizs []string, bizIds []int64) error {
+	// 使用事务，确保所有操作要么全部成功，要么全部失败
+	return dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 创建一个新的GORMInteractiveDAO实例，用于在事务中操作数据库
+		txDAO := NewGORMInteractiveDAO(tx)
+		// 遍历bizs和bizIds数组
+		for i := 0; i < len(bizs); i++ {
+			// 调用IncrReadCnt函数，增加阅读次数
+			err := txDAO.IncrReadCnt(ctx, bizs[i], bizIds[i])
+			// 如果出现错误，则返回错误
+			if err != nil {
+				return err
+			}
+		}
+		// 如果没有出现错误，则返回nil
+		return nil
+	})
 }
 
 func (dao *GORMInteractiveDAO) Get(ctx context.Context, biz string, id int64) (Interactive, error) {
