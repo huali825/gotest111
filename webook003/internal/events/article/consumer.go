@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// InteractiveReadEventConsumer 统一的消费者的接口，这个主要是为了依赖注入服务的
 type InteractiveReadEventConsumer struct {
 	repo   repository.InteractiveRepository
 	client sarama.Client
@@ -20,31 +21,21 @@ func NewInteractiveReadEventConsumer(repo repository.InteractiveRepository,
 	return &InteractiveReadEventConsumer{repo: repo, client: client, l: l}
 }
 
+// Start 函数用于启动消费者(批量
+// Start函数用于启动InteractiveReadEventConsumer
 func (i *InteractiveReadEventConsumer) Start() error {
+	// 从client创建一个新的ConsumerGroup
 	cg, err := sarama.NewConsumerGroupFromClient("interactive", i.client)
 	if err != nil {
 		return err
 	}
+	// 使用go关键字启动一个新的goroutine
 	go func() {
+		// 使用批量处理
 		er := cg.Consume(context.Background(),
 			[]string{TopicReadEvent},
-			saramaHdl.NewBatchHandler[ReadEvent](i.l, i.BatchConsume)) //使用批量处理
-		if er != nil {
-			i.l.Error("退出消费", logger.Error(er))
-		}
-	}()
-	return err
-}
-
-func (i *InteractiveReadEventConsumer) StartV1() error {
-	cg, err := sarama.NewConsumerGroupFromClient("interactive", i.client)
-	if err != nil {
-		return err
-	}
-	go func() {
-		er := cg.Consume(context.Background(),
-			[]string{TopicReadEvent},
-			saramaHdl.NewHandler[ReadEvent](i.l, i.Consume)) //使用单条处理
+			saramaHdl.NewBatchHandler[ReadEvent](i.l, i.BatchConsume))
+		// 如果出现错误，记录错误日志
 		if er != nil {
 			i.l.Error("退出消费", logger.Error(er))
 		}
@@ -78,7 +69,24 @@ func (i *InteractiveReadEventConsumer) BatchConsume(
 	return i.repo.BatchIncrReadCnt(ctx, bizs, bizIds)
 }
 
-// Consume 函数用于处理从Kafka中消费的消息
+// StartV1 函数用于启动消费者(非批量
+func (i *InteractiveReadEventConsumer) StartV1() error {
+	cg, err := sarama.NewConsumerGroupFromClient("interactive", i.client)
+	if err != nil {
+		return err
+	}
+	go func() {
+		er := cg.Consume(context.Background(),
+			[]string{TopicReadEvent},
+			saramaHdl.NewHandler[ReadEvent](i.l, i.Consume)) //使用单条处理
+		if er != nil {
+			i.l.Error("退出消费", logger.Error(er))
+		}
+	}()
+	return err
+}
+
+// Consume 函数用于非批量消费消息和事件
 func (i *InteractiveReadEventConsumer) Consume(msg *sarama.ConsumerMessage,
 	event ReadEvent) error {
 	// 创建一个带有超时的上下文

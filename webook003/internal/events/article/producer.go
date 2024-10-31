@@ -7,6 +7,7 @@ import (
 
 const TopicReadEvent = "article_read"
 
+// Producer 消息队列发出消息
 type Producer interface {
 	ProduceReadEvent(evt ReadEvent) error
 }

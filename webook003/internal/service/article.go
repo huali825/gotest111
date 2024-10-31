@@ -35,6 +35,7 @@ func NewArticleService(
 	}
 }
 
+// GetPubById 通过id获取文章
 func (a *articleService) GetPubById(ctx context.Context, id, uid int64) (domain.Article, error) {
 	// 根据id从数据库中获取文章
 	res, err := a.repo.GetPubById(ctx, id)
