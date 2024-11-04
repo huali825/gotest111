@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -20,6 +21,8 @@ func main() {
 	initLogger()  // 初始化日志
 
 	app := InitWebServerAndCsm()
+	initPrometheus()
+
 	for _, c := range app.consumers {
 		err := c.Start()
 		if err != nil {
@@ -37,6 +40,16 @@ func main() {
 	}
 }
 
+// 初始化 Prometheus
+func initPrometheus() {
+	go func() {
+		// 专门给 prometheus 用的端口
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":8081", nil)
+	}()
+}
+
+// 有用 但是我暂时没用到这里
 func initViperV1() {
 	cfile := pflag.String("config",
 		"webook003/config/config.yaml", "配置文件路径")
@@ -55,7 +68,7 @@ func initViperV1() {
 	log.Println(val)
 }
 
-// 初始化日志
+// 初始化日志 目前暂时没用了2024年11月4日16:29:00
 func initLogger() {
 	// 创建一个新的开发模式的日志
 	logger, err := zap.NewDevelopment()
