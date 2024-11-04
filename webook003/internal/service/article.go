@@ -20,11 +20,11 @@ type ArticleService interface {
 type articleService struct {
 	repo     repository.ArticleRepository
 	producer article.Producer
+	l        logger.LoggerV1
 
 	// V1 写法专用
 	readerRepo repository.ArticleReaderRepository
 	authorRepo repository.ArticleAuthorRepository
-	l          logger.LoggerV1
 }
 
 func NewArticleService(
@@ -40,7 +40,7 @@ func (a *articleService) GetPubById(ctx context.Context, id, uid int64) (domain.
 	// 根据id从数据库中获取文章
 	res, err := a.repo.GetPubById(ctx, id)
 
-	// 在后台发送一个消息
+	// 在后台发送一个消息 kafka发消息的地方
 	go func() {
 		if err == nil {
 			// 在这里发一个消息

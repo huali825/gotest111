@@ -34,11 +34,15 @@ func NewCachedInteractiveRepository(
 	return &CachedInteractiveRepository{dao: dao, cache: cache}
 }
 
+// BatchIncrReadCnt 函数用于批量增加阅读次数
 func (c *CachedInteractiveRepository) BatchIncrReadCnt(ctx context.Context, biz []string, bizId []int64) error {
+	// 调用 dao 的 BatchIncrReadCnt 方法，批量增加阅读次数
 	err := c.dao.BatchIncrReadCnt(ctx, biz, bizId)
 	if err != nil {
+		// 如果发生错误，返回错误
 		return err
 	}
+	// 在后台协程中，遍历 biz 和 bizId，调用 cache 的 IncrReadCntIfPresent 方法，增加阅读次数
 	go func() {
 		for i := 0; i < len(biz); i++ {
 			er := c.cache.IncrReadCntIfPresent(ctx, biz[i], bizId[i])
