@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var intnum01 int = 0
+
 // BatchHandler 是一个用于处理批量消息的消费者组处理器
 // 定义一个泛型结构体BatchHandler，用于处理批量的消息
 type BatchHandler[T any] struct {
@@ -37,7 +39,8 @@ func (b *BatchHandler[T]) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 	const batchSize = 10
 	// 循环处理消息
 	for {
-		log.Println("一个批次开始")
+		log.Println(intnum01, "一个批次开始")
+		intnum01++
 		// 定义批次
 		batch := make([]*sarama.ConsumerMessage, 0, batchSize)
 		// 定义消息体

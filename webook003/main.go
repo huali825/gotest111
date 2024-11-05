@@ -7,7 +7,9 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 )
 
 func main() {
@@ -31,7 +33,10 @@ func main() {
 	}
 	server := app.server
 	server.GET("/hello", func(ctx *gin.Context) {
+		sleep := rand.Int31n(1000)
+		time.Sleep(time.Millisecond * time.Duration(sleep))
 		ctx.String(http.StatusOK, "hello，启动成功了！")
+		log.Println("hello", "hello world 2024年11月5日14:42:26")
 	})
 
 	err := server.Run(":8080")

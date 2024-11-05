@@ -1,14 +1,13 @@
 package ioc
 
 import (
-	"context"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"goworkwebook/webook003/internal/web"
 	ijwt "goworkwebook/webook003/internal/web/jwt"
 	"goworkwebook/webook003/internal/web/middleware"
-	"goworkwebook/webook003/pkg/ginx/middleware/ratelimit"
+	"goworkwebook/webook003/pkg/ginx/middleware/prometheus"
 	"goworkwebook/webook003/pkg/logger"
 	"strings"
 	"time"
@@ -28,9 +27,20 @@ func InitWebServer(
 	return server
 }
 
-func InitGinMiddlewares(redisClient redis.Cmdable,
-	hdl ijwt.Handler, l logger.LoggerV1) []gin.HandlerFunc {
+func InitGinMiddlewares(redisClient redis.Cmdable, hdl ijwt.Handler, l logger.LoggerV1) []gin.HandlerFunc {
 	// func
+	pb := &prometheus.Builder{
+		Namespace: "tangminghao_zixue", //不要用连字符 -
+		Subsystem: "webook",
+		Name:      "gin_http",
+		Help:      "统计 GIN 的HTTP接口数据",
+	}
+	//ginx.InitCounter(prometheus2.CounterOpts{
+	//	Namespace: "geektime_daming",
+	//	Subsystem: "webook",
+	//	Name:      "biz_code",
+	//	Help:      "统计业务错误码",
+	//})
 	return []gin.HandlerFunc{
 		func(context *gin.Context) {
 			println("这是我的 Middleware 1")
@@ -60,10 +70,10 @@ func InitGinMiddlewares(redisClient redis.Cmdable,
 			},
 		}),
 
-		func(context *gin.Context) {
-			println("redis限流, pkg/ginx/middleware/ratelimit实现的 集成测试需要关闭此功能")
-		},
-		ratelimit.NewBuilder(redisClient, time.Second, 1).Build(),
+		//func(context *gin.Context) {
+		//	println("redis限流, pkg/ginx/middleware/ratelimit实现的 集成测试需要关闭此功能")
+		//},
+		//ratelimit.NewBuilder(redisClient, time.Second, 1).Build(),
 
 		func(context *gin.Context) { println("jwt登录校验") },
 		middleware.NewLoginJWTMiddlewareBuilder(hdl).
@@ -75,10 +85,12 @@ func InitGinMiddlewares(redisClient redis.Cmdable,
 			IgnorePaths("/oauth2/wechat/callback").
 			IgnorePaths("/users/login_sms").CheckLogin(),
 
-		middleware.NewLogMiddlewareBuilder(func(ctx context.Context, al middleware.AccessLog) {
-			l.Debug("", logger.Field{Key: "req", Val: al})
-		}).AllowReqBody().AllowRespBody().Build(),
-		middleware.NewLoginJWTMiddlewareBuilder(hdl).CheckLogin(),
+		//在处理HTTP请求和响应时记录日志
+		//middleware.NewLogMiddlewareBuilder(func(ctx context.Context, al middleware.AccessLog) {
+		//	l.Debug("", logger.Field{Key: "req", Val: al})
+		//}).AllowReqBody().AllowRespBody().Build(),
+
+		pb.BuildResponseTime(),
 
 		//store的三种实现方式:
 		// 第1种实现方式
