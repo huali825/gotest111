@@ -8,6 +8,7 @@ const (
 	UserInvalidOrPassword = 401002
 	// UserDuplicateEmail 用户邮箱冲突
 	UserDuplicateEmail = 401003
+
 	// UserInternalServerError 统一的用户模块的系统错误
 	UserInternalServerError = 501001
 )
