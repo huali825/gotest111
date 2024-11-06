@@ -2,12 +2,30 @@ package redisx
 
 import (
 	"context"
+	"errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 	"net"
 	"strconv"
 	"time"
 )
+
+func use(client *redis.Client) {
+	client.AddHook(NewPrometheusHook(prometheus.SummaryOpts{
+		Name: "redis_process_duration",
+		Help: "redis process duration",
+		// 定义SummaryVec的标签
+		ConstLabels: map[string]string{
+			"addr": client.Options().Addr,
+		},
+	}))
+}
+
+//type Hook interface {
+//    DialHook(next DialHook) DialHook
+//    ProcessHook(next ProcessHook) ProcessHook
+//    ProcessPipelineHook(next ProcessPipelineHook) ProcessPipelineHook
+//}
 
 // PrometheusHook 定义一个PrometheusHook结构体，包含一个指向prometheus.SummaryVec的指针
 type PrometheusHook struct {
@@ -43,7 +61,7 @@ func (p *PrometheusHook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 			// 计算执行时间
 			duration := time.Since(start).Milliseconds()
 			// 判断错误是否为redis.Nil
-			keyExists := err == redis.Nil
+			keyExists := errors.Is(redis.Nil, err)
 			// 使用Prometheus记录执行时间
 			p.vector.WithLabelValues(cmd.Name(), strconv.FormatBool(keyExists)).
 				Observe(float64(duration))
