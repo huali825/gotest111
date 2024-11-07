@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"goworkwebook/webook003/ioc"
 	"log"
 	"math/rand"
 	"net/http"
@@ -22,6 +24,18 @@ func main() {
 	initViperV1() // 初始化配置
 	initLogger()  // 初始化日志
 
+	// 初始化OTEL
+	tpCancel := ioc.InitOTEL()
+	// 延迟执行
+	defer func() {
+		// 创建一个带有超时的上下文
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		// 延迟执行取消上下文
+		defer cancel()
+		// 调用tpCancel函数，传入上下文
+		tpCancel(ctx)
+	}()
+
 	app := InitWebServerAndCsm()
 	initPrometheus()
 
@@ -33,9 +47,9 @@ func main() {
 	}
 	server := app.server
 	server.GET("/hello", func(ctx *gin.Context) {
-		sleep := rand.Int31n(1000)
+		sleep := rand.Int31n(100)
 		time.Sleep(time.Millisecond * time.Duration(sleep))
-		ctx.String(http.StatusOK, "hello，启动成功了！")
+		ctx.String(http.StatusOK, "hello，启动成功了！", time.Now())
 		log.Println("hello", "hello world 2024年11月5日14:42:26")
 	})
 

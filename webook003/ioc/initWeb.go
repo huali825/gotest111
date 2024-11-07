@@ -4,6 +4,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"goworkwebook/webook003/internal/web"
 	ijwt "goworkwebook/webook003/internal/web/jwt"
 	"goworkwebook/webook003/internal/web/middleware"
@@ -91,6 +92,9 @@ func InitGinMiddlewares(redisClient redis.Cmdable, hdl ijwt.Handler, l logger.Lo
 		//}).AllowReqBody().AllowRespBody().Build(),
 
 		pb.BuildResponseTime(),
+
+		//gin框架集成open telemetry
+		otelgin.Middleware("webook"),
 
 		//store的三种实现方式:
 		// 第1种实现方式
