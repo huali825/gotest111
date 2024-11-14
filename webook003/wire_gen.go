@@ -52,9 +52,13 @@ func InitWebServerAndCsm() *App {
 	engine := ioc.InitWebServer(v, userHandler, articleHandler, oAuth2WechatHandler)
 	interactiveReadEventConsumer := article.NewInteractiveReadEventConsumer(interactiveRepository, client, loggerV1)
 	v2 := ioc.InitConsumers(interactiveReadEventConsumer)
+	rankingService := service.NewBatchRankingService(interactiveService, articleService)
+	rankingJob := ioc.InitRankingJob(rankingService)
+	cron := ioc.InitJobs(loggerV1, rankingJob)
 	app := &App{
 		server:    engine,
 		consumers: v2,
+		cron:      cron,
 	}
 	return app
 }
@@ -66,3 +70,5 @@ var userSvcProvider = wire.NewSet(dao.NewUserDAO, cache.NewUserCache, repository
 var articleSvcProvider = wire.NewSet(dao.NewArticleGORMDAO, cache.NewArticleRedisCache, repository.NewCachedArticleRepository, service.NewArticleService)
 
 var interactiveSvcSet = wire.NewSet(dao.NewGORMInteractiveDAO, cache.NewInteractiveRedisCache, repository.NewCachedInteractiveRepository, service.NewInteractiveService)
+
+var rankingSvcSet = wire.NewSet(cache.NewRankingRedisCache, repository.NewCachedRankingRepository, service.NewBatchRankingService)

@@ -22,6 +22,8 @@ type InteractiveDAO interface {
 	Get(ctx context.Context, biz string, id int64) (Interactive, error)
 
 	BatchIncrReadCnt(ctx context.Context, bizs []string, bizIds []int64) error
+
+	GetByIds(ctx context.Context, biz string, ids []int64) ([]Interactive, error)
 }
 
 type GORMInteractiveDAO struct {
@@ -30,6 +32,14 @@ type GORMInteractiveDAO struct {
 
 func NewGORMInteractiveDAO(db *gorm.DB) InteractiveDAO {
 	return &GORMInteractiveDAO{db: db}
+}
+
+func (dao *GORMInteractiveDAO) GetByIds(ctx context.Context, biz string, ids []int64) ([]Interactive, error) {
+	var res []Interactive
+	err := dao.db.WithContext(ctx).
+		Where("biz = ? AND biz_id IN ?", biz, ids).
+		First(&res).Error
+	return res, err
 }
 
 // BatchIncrReadCnt 函数用于批量增加阅读次数

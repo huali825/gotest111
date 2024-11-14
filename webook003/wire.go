@@ -33,6 +33,12 @@ var interactiveSvcSet = wire.NewSet(
 	service.NewInteractiveService,
 )
 
+var rankingSvcSet = wire.NewSet(
+	cache.NewRankingRedisCache,
+	repository.NewCachedRankingRepository,
+	service.NewBatchRankingService,
+)
+
 func InitWebServerAndCsm() *App {
 	wire.Build(
 		// 第三方依赖
@@ -48,6 +54,9 @@ func InitWebServerAndCsm() *App {
 		userSvcProvider,
 		articleSvcProvider,
 		interactiveSvcSet,
+		rankingSvcSet,
+		ioc.InitJobs,
+		ioc.InitRankingJob,
 
 		// cache 部分
 		cache.NewCodeCache,

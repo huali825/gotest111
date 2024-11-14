@@ -19,6 +19,11 @@ type MongoDBArticleDAO struct {
 	liveCol *mongo.Collection // 存储实时文章信息的集合
 }
 
+func (m *MongoDBArticleDAO) ListPub(ctx context.Context, start time.Time, offset int, limit int) ([]PublishedArticle, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 // Insert 在MongoDBArticleDAO结构体中定义Insert方法，用于向数据库中插入一条Article记录
 func (m *MongoDBArticleDAO) Insert(ctx context.Context, art IsDaoArticle) (int64, error) {
 	// 获取当前时间戳

@@ -14,9 +14,11 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
+	github.com/gotomicro/redis-lock v0.0.3
 	github.com/lithammer/shortuuid/v4 v4.0.0
 	github.com/prometheus/client_golang v1.20.5
 	github.com/redis/go-redis/v9 v9.6.1
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
@@ -27,6 +29,7 @@ require (
 	go.opentelemetry.io/otel v1.31.0
 	go.opentelemetry.io/otel/exporters/zipkin v1.31.0
 	go.opentelemetry.io/otel/sdk v1.31.0
+	go.opentelemetry.io/otel/trace v1.31.0
 	go.uber.org/mock v0.4.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.28.0
@@ -34,6 +37,7 @@ require (
 	golang.org/x/sync v0.8.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.11
+	gorm.io/plugin/opentelemetry v0.1.8
 	gorm.io/plugin/prometheus v0.1.0
 )
 
@@ -106,8 +110,7 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.opentelemetry.io/otel/metric v1.31.0 // indirect
-	go.opentelemetry.io/otel/trace v1.31.0 // indirect
-	go.uber.org/multierr v1.10.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.11.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/sys v0.26.0 // indirect

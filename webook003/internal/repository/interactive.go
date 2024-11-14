@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/ecodeclub/ekit/slice"
 	"goworkwebook/webook003/internal/domain"
 	"goworkwebook/webook003/internal/repository/cache"
 	"goworkwebook/webook003/internal/repository/dao"
@@ -20,12 +21,24 @@ type InteractiveRepository interface {
 
 	// BatchIncrReadCnt biz 和 bizId 长度必须一致 批量处理
 	BatchIncrReadCnt(ctx context.Context, biz []string, bizId []int64) error
+
+	GetByIds(ctx context.Context, biz string, ids []int64) ([]domain.Interactive, error)
 }
 
 type CachedInteractiveRepository struct {
 	dao   dao.InteractiveDAO
 	cache cache.InteractiveCache
 	l     logger.LoggerV1
+}
+
+func (c *CachedInteractiveRepository) GetByIds(ctx context.Context, biz string, ids []int64) ([]domain.Interactive, error) {
+	intrs, err := c.dao.GetByIds(ctx, biz, ids)
+	if err != nil {
+		return nil, err
+	}
+	return slice.Map(intrs, func(idx int, src dao.Interactive) domain.Interactive {
+		return c.toDomain(src)
+	}), nil
 }
 
 func NewCachedInteractiveRepository(

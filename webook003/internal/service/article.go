@@ -6,8 +6,10 @@ import (
 	"goworkwebook/webook003/internal/events/article"
 	"goworkwebook/webook003/internal/repository"
 	"goworkwebook/webook003/pkg/logger"
+	"time"
 )
 
+//go:generate mockgen -source=./article.go -package=svcmocks -destination=./mocks/article.mock.go ArticleService
 type ArticleService interface {
 	Save(ctx context.Context, art domain.Article) (int64, error)
 	Publish(ctx context.Context, art domain.Article) (int64, error)
@@ -15,6 +17,7 @@ type ArticleService interface {
 	GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]domain.Article, error)
 	GetById(ctx context.Context, id int64) (domain.Article, error)
 	GetPubById(ctx context.Context, id, uid int64) (domain.Article, error)
+	ListPub(ctx context.Context, start time.Time, offset, limit int) ([]domain.Article, error)
 }
 
 type articleService struct {
@@ -33,6 +36,12 @@ func NewArticleService(
 		repo:     repo,
 		producer: producer,
 	}
+}
+
+// ListPub 获取公开的文章列表
+func (a *articleService) ListPub(ctx context.Context,
+	start time.Time, offset, limit int) ([]domain.Article, error) {
+	return a.repo.ListPub(ctx, start, offset, limit)
 }
 
 // GetPubById 通过id获取文章

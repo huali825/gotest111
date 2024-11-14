@@ -4,6 +4,7 @@ import (
 	prometheus2 "github.com/prometheus/client_golang/prometheus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/plugin/opentelemetry/tracing"
 	"gorm.io/plugin/prometheus"
 	"goworkwebook/webook003/config"
 	"goworkwebook/webook003/internal/repository/dao"
@@ -69,6 +70,14 @@ func InitDB() *gorm.DB {
 	err = db.Use(cb)
 	// 如果出现错误，则抛出异常
 	if err != nil {
+		panic(err)
+	}
+
+	// 使用tracing插件，不收集metrics，数据库名称为webook
+	err = db.Use(tracing.NewPlugin(tracing.WithoutMetrics(),
+		tracing.WithDBName("webook")))
+	if err != nil {
+		// 如果出现错误，则panic
 		panic(err)
 	}
 
