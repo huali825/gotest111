@@ -2,7 +2,7 @@ package grpc001
 
 import (
 	"google.golang.org/grpc"
-	"goworkwebook/grpc001/myGrpc"
+	"goworkwebook/syntax/grpc001/myGrpc"
 	"net"
 	"testing"
 )
