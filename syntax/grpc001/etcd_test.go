@@ -38,7 +38,26 @@ func (s *EtcdTestSuite) SetupSuite() {
 	s.cli = cli
 }
 
-func (s *EtcdTestSuite) TestServer() {
+func (s *EtcdTestSuite) TestStartServer() {
+
+	// 监听地址 这里创建了一个server, 并监听8090端口
+	listener, err := net.Listen("tcp", ":8090")
+	require.NoError(s.T(), err)
+
+	// 创建一个grpc服务器
+	server := grpc.NewServer()
+	// 注册UserServiceServer
+	myGrpc2.RegisterUserServiceServer(server, &Server{})
+
+	// 启动服务器
+	server.Serve(listener)
+
+	// 停止服务器
+	server.GracefulStop()
+}
+
+// TestETCDServer 启动 etcd 注册中心
+func (s *EtcdTestSuite) TestETCDServer() {
 	t := s.T()
 	// 创建一个新的endpoints管理器
 	em, err := endpoints.NewManager(s.cli, "service/user")
@@ -52,20 +71,20 @@ func (s *EtcdTestSuite) TestServer() {
 	addr := "127.0.0.1:8090"
 	// 定义一个key
 	key := "service/user/" + addr
-	// 监听地址 这里创建了一个server, 并监听8090端口
-	listener, err := net.Listen("tcp", ":8090")
-	require.NoError(s.T(), err)
+	//// 监听地址 这里创建了一个server, 并监听8090端口
+	//listener, err := net.Listen("tcp", ":8090")
+	//require.NoError(s.T(), err)
 
 	// 创建一个带有超时的上下文
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	// 定义租期
-	var ttl int64 = 5
+	// 定义租期 5秒
+	var ttl int64 = 9
 	// 创建一个租约
 	leaseResp, err := s.cli.Grant(ctx, ttl)
 	require.NoError(t, err)
 
-	// 添加一个endpoints
+	// 创建节点 service/user/127.0.0.1:8090
 	err = em.AddEndpoint(ctx, key, endpoints.Endpoint{
 		// 定位信息，客户端怎么连你
 		Addr: addr,
@@ -85,15 +104,24 @@ func (s *EtcdTestSuite) TestServer() {
 	}()
 
 	// 启动一个协程，模拟注册信息变动
-	go func() {
+	//	// 创建一个新的endpoints管理器
+	//	em, err := endpoints.NewManager(s.cli, "service/user")
+	//	// 定义一个地址
+	//	addr := "127.0.0.1:8090"
+	//	// 定义一个key
+	//	key := "service/user/" + addr
+	go func(endpointsManager endpoints.Manager, goFuncKey string, goFuncAddr string, goFuncLeaseResp *etcdv3.LeaseGrantResponse) {
 		ticker := time.NewTicker(time.Second)
+		// 循环获取ticker.C的值
 		for now := range ticker.C {
+			// 创建一个带有超时的context
 			ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second)
-			err1 := em.Update(ctx1, []*endpoints.UpdateWithOpts{
+			// 更新etcd中的值
+			err1 := endpointsManager.Update(ctx1, []*endpoints.UpdateWithOpts{
 				{
 					Update: endpoints.Update{
 						Op:  endpoints.Add,
-						Key: key,
+						Key: goFuncKey,
 						Endpoint: endpoints.Endpoint{
 							Addr:     addr,
 							Metadata: now.String(),
@@ -101,36 +129,24 @@ func (s *EtcdTestSuite) TestServer() {
 					},
 					Opts: []etcdv3.OpOption{etcdv3.WithLease(leaseResp.ID)},
 				},
-				//{
-				//	Update: endpoints.Update{
-				//		Op:  endpoints.Delete,
-				//		Key: key,
-				//		Endpoint: endpoints.Endpoint{
-				//			Addr:     addr,
-				//			Metadata: now.String(),
-				//		},
-				//	},
-				//},
 			})
-			// INSERT or update, save
-			//err1 := em.AddEndpoint(ctx1, key, endpoints.Endpoint{
-			//	Addr:     addr,
-			//	Metadata: now.String(),
-			//}, etcdv3.WithLease(leaseResp.ID))
+			// 取消context
 			cancel1()
+			// 如果更新失败，打印错误信息
 			if err1 != nil {
 				t.Log(err1)
 			}
 		}
-	}()
+	}(em, key, addr, leaseResp)
 
-	// 创建一个grpc服务器
-	server := grpc.NewServer()
-	// 注册UserServiceServer
-	myGrpc2.RegisterUserServiceServer(server, &Server{})
-
-	// 启动服务器
-	server.Serve(listener)
+	//// 创建一个grpc服务器
+	//server := grpc.NewServer()
+	//// 注册UserServiceServer
+	//myGrpc2.RegisterUserServiceServer(server, &Server{})
+	//
+	//// 启动服务器
+	//server.Serve(listener)
+	time.Sleep(time.Minute * 10)
 
 	// 取消上下文
 	kaCancel()
@@ -139,8 +155,9 @@ func (s *EtcdTestSuite) TestServer() {
 	if err != nil {
 		t.Log(err)
 	}
-	// 停止服务器
-	server.GracefulStop()
+
+	//// 停止服务器
+	//server.GracefulStop()
 	// 关闭etcd客户端
 	s.cli.Close()
 }
