@@ -286,6 +286,7 @@ func (h *UserHandler) LoginSMS(ctx *gin.Context) {
 		return
 	}
 
+	// 校验 验证码
 	ok, err := h.codeSvc.Verify(ctx, bizLogin, req.Phone, req.Code)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{

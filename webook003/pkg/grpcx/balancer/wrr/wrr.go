@@ -10,8 +10,8 @@ import (
 var _ base.PickerBuilder = &PickerBuilderStck{}
 var _ balancer.Picker = &PickerStck{}
 
-// 定义一个常量，表示负载均衡器的名称
-const Name = "custom_weighted_round_robin"
+// Name  定义一个常量，表示负载均衡器的名称
+const Name = "custom_wrr"
 
 // 创建一个新的负载均衡器构建器
 func newBuilder() balancer.Builder {

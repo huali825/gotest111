@@ -10,13 +10,14 @@ var _ myGrpc2.UserServiceServer = &Server{}
 
 type Server struct {
 	myGrpc2.UnimplementedUserServiceServer
+	Name string
 }
 
 func (s Server) GetByID(ctx context.Context, request *myGrpc2.GetByIDRequest) (*myGrpc2.GetByIDResponse, error) {
 	return &myGrpc2.GetByIDResponse{
 		User: &myGrpc2.Person{
 			Id:    123,
-			Name:  "test",
+			Name:  "test port from: " + s.Name,
 			Email: "test@test.com",
 		},
 	}, nil

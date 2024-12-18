@@ -40,12 +40,16 @@ func (svc *codeService) Send(ctx context.Context, biz, phone string) error {
 	return svc.sms.Send(ctx, codeTplId, []string{code}, phone)
 }
 
+// Verify函数用于验证输入的验证码是否正确
 func (svc *codeService) Verify(ctx context.Context, biz, phone, inputCode string) (bool, error) {
+	// 调用repo的Verify函数进行验证
 	ok, err := svc.repo.Verify(ctx, biz, phone, inputCode)
+	// 如果验证次数过多，则返回false和nil
 	if errors.Is(err, repository.ErrCodeVerifyTooMany) {
 		// 相当于，我们对外面屏蔽了验证次数过多的错误，我们就是告诉调用者，你这个不对
 		return false, nil
 	}
+	// 否则返回验证结果和错误信息
 	return ok, err
 }
 
