@@ -14,6 +14,7 @@ type Server struct {
 }
 
 func (s Server) GetByID(ctx context.Context, request *myGrpc.GetByIDRequest) (*myGrpc.GetByIDResponse, error) {
+	//time.Sleep(time.Second)
 	return &myGrpc.GetByIDResponse{
 		User: &myGrpc.Person{
 			Id:    123,
