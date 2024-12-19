@@ -9,7 +9,7 @@ import (
 	"go.etcd.io/etcd/client/v3/naming/resolver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	myGrpc2 "goworkwebook/syntax/grpc001/myGrpc"
+	myGrpc "goworkwebook/syntax/grpc001/myGrpc"
 	"goworkwebook/webook003/pkg/netx"
 	"net"
 	"testing"
@@ -41,10 +41,10 @@ func (s *EtcdTestSuite002) TestClient() {
 		grpc.WithResolvers(etcdResolver),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	client := myGrpc2.NewUserServiceClient(cc)
+	client := myGrpc.NewUserServiceClient(cc)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	resp, err := client.GetByID(ctx, &myGrpc2.GetByIDRequest{Id: 123})
+	resp, err := client.GetByID(ctx, &myGrpc.GetByIDRequest{Id: 123})
 	require.NoError(t, err)
 	t.Log(resp.User)
 }
@@ -124,7 +124,7 @@ func (s *EtcdTestSuite002) TestServer() {
 	}()
 
 	server := grpc.NewServer()
-	myGrpc2.RegisterUserServiceServer(server, &Server{})
+	myGrpc.RegisterUserServiceServer(server, &Server{})
 	server.Serve(listenS)
 	kaCancel()
 	err = em.DeleteEndpoint(ctx, key)

@@ -1,4 +1,4 @@
-package grpc001
+package failoverGrpctest
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"go.etcd.io/etcd/client/v3/naming/resolver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"goworkwebook/syntax/grpc001"
 	"goworkwebook/syntax/grpc001/myGrpc"
 	_ "goworkwebook/webook003/pkg/grpcx/balancer/wrr"
 	"goworkwebook/webook003/pkg/netx"
@@ -32,6 +33,45 @@ func (s *BalancerCycleTestSuite) SetupSuite() {
 type BalancerCycleTestSuite struct {
 	suite.Suite
 	cli *etcdv3.Client
+}
+
+// 熔断
+func (s *BalancerCycleTestSuite) TestFailedOverClient() {
+	// 获取测试用例的T对象
+	t := s.T()
+
+	svcCfg := `{"loadBalancingPolicy":"custom_wrr"}`
+
+	// 创建Etcd解析器
+	etcdResolver, err := resolver.NewBuilder(s.cli)
+	// 断言没有错误
+	require.NoError(s.T(), err)
+
+	// 使用Etcd解析器创建gRPC连接
+	cc, err := grpc.Dial("etcd:///service/user",
+		grpc.WithResolvers(etcdResolver),
+		grpc.WithDefaultServiceConfig(svcCfg),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// 断言没有错误
+	require.NoError(t, err)
+
+	// 创建UserService客户端
+	client := myGrpc.NewUserServiceClient(cc)
+
+	// 调用GetByID方法获取用户信息
+	for i := 0; i < 30; i++ {
+		// 创建带有超时的上下文
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		// 在函数结束时取消上下文
+		defer cancel()
+		resp, err := client.GetByID(ctx, &myGrpc.GetByIDRequest{Id: 123})
+		// 断言没有错误
+		require.NoError(t, err)
+		// 打印用户信息
+		t.Log(resp.User)
+	}
+
+	//time.Sleep(time.Minute)
 }
 
 // TestWrrClient wrr
@@ -114,15 +154,21 @@ func (s *BalancerCycleTestSuite) TestRoundRobinClient() {
 
 func (s *BalancerCycleTestSuite) TestServer() {
 	go func() {
-		s.startServer(":8090", 10)
+		s.startServer(":8090", 10, &grpc001.Server{
+			Name: ":8090",
+		})
 	}()
 	go func() {
-		s.startServer(":8091", 20)
+		s.startServer(":8091", 20, &grpc001.Server{
+			Name: ":8091",
+		})
 	}()
-	s.startServer(":8092", 30)
+	s.startServer(":8092", 30, &FailedServer{
+		Name: ":8092",
+	})
 }
 
-func (s *BalancerCycleTestSuite) startServer(addr string, weight int) {
+func (s *BalancerCycleTestSuite) startServer(addr string, weight int, svc myGrpc.UserServiceServer) {
 	t := s.T()
 
 	// 监听指定地址
@@ -174,7 +220,7 @@ func (s *BalancerCycleTestSuite) startServer(addr string, weight int) {
 	// 创建grpc服务器
 	server := grpc.NewServer()
 	// 注册UserServiceServer
-	myGrpc.RegisterUserServiceServer(server, &Server{Name: addr})
+	myGrpc.RegisterUserServiceServer(server, svc)
 	// 启动grpc服务器
 	server.Serve(listenS)
 	// 取消keepalive上下文

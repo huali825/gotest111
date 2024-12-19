@@ -9,7 +9,7 @@ import (
 	"go.etcd.io/etcd/client/v3/naming/resolver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	myGrpc2 "goworkwebook/syntax/grpc001/myGrpc"
+	myGrpc "goworkwebook/syntax/grpc001/myGrpc"
 	"goworkwebook/webook003/pkg/netx"
 	"net"
 	"testing"
@@ -49,7 +49,7 @@ func (s *BalancerTestSuite) TestPickFirst() {
 	require.NoError(t, err)
 
 	// 创建UserService客户端
-	client := myGrpc2.NewUserServiceClient(cc)
+	client := myGrpc.NewUserServiceClient(cc)
 
 	// 调用GetByID方法获取用户信息
 	for i := 0; i < 10; i++ {
@@ -57,7 +57,7 @@ func (s *BalancerTestSuite) TestPickFirst() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		// 在函数结束时取消上下文
 		defer cancel()
-		resp, err := client.GetByID(ctx, &myGrpc2.GetByIDRequest{Id: 123})
+		resp, err := client.GetByID(ctx, &myGrpc.GetByIDRequest{Id: 123})
 		// 断言没有错误
 		require.NoError(t, err)
 		// 打印用户信息
@@ -123,7 +123,7 @@ func (s *BalancerTestSuite) startServer(addr string) {
 	// 创建grpc服务器
 	server := grpc.NewServer()
 	// 注册UserServiceServer
-	myGrpc2.RegisterUserServiceServer(server, &Server{Name: addr})
+	myGrpc.RegisterUserServiceServer(server, &Server{Name: addr})
 	// 启动grpc服务器
 	server.Serve(listenS)
 	// 取消keepalive上下文

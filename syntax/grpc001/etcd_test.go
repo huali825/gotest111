@@ -9,7 +9,7 @@ import (
 	"go.etcd.io/etcd/client/v3/naming/resolver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	myGrpc2 "goworkwebook/syntax/grpc001/myGrpc"
+	myGrpc "goworkwebook/syntax/grpc001/myGrpc"
 	"net"
 	"testing"
 	"time"
@@ -47,7 +47,7 @@ func (s *EtcdTestSuite) TestStartServer() {
 	// 创建一个grpc服务器
 	server := grpc.NewServer()
 	// 注册UserServiceServer
-	myGrpc2.RegisterUserServiceServer(server, &Server{})
+	myGrpc.RegisterUserServiceServer(server, &Server{})
 
 	// 启动服务器
 	server.Serve(listener)
@@ -142,7 +142,7 @@ func (s *EtcdTestSuite) TestETCDServer() {
 	//// 创建一个grpc服务器
 	//server := grpc.NewServer()
 	//// 注册UserServiceServer
-	//myGrpc2.RegisterUserServiceServer(server, &Server{})
+	//myGrpc.RegisterUserServiceServer(server, &Server{})
 	//
 	//// 启动服务器
 	//server.Serve(listener)
@@ -179,14 +179,14 @@ func (s *EtcdTestSuite) TestClient() {
 	require.NoError(t, err)
 
 	// 创建UserService客户端
-	client := myGrpc2.NewUserServiceClient(cc)
+	client := myGrpc.NewUserServiceClient(cc)
 	// 创建带有超时的上下文
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	// 在函数结束时取消上下文
 	defer cancel()
 
 	// 调用GetByID方法获取用户信息
-	resp, err := client.GetByID(ctx, &myGrpc2.GetByIDRequest{Id: 123})
+	resp, err := client.GetByID(ctx, &myGrpc.GetByIDRequest{Id: 123})
 	// 断言没有错误
 	require.NoError(t, err)
 	// 打印用户信息
