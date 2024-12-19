@@ -35,7 +35,7 @@ type BalancerCycleTestSuite struct {
 	cli *etcdv3.Client
 }
 
-// 熔断
+// 轮询的failOver策略的实现
 func (s *BalancerCycleTestSuite) TestFailedOverClient() {
 	// 获取测试用例的T对象
 	t := s.T()
