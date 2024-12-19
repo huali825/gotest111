@@ -40,7 +40,21 @@ func (s *BalancerCycleTestSuite) TestFailedOverClient() {
 	// 获取测试用例的T对象
 	t := s.T()
 
-	svcCfg := `{"loadBalancingPolicy":"custom_wrr"}`
+	svcCfg := `{
+  "loadBalancingConfig": [{"round_robin": {}}],
+  "methodConfig":  [
+    {
+      "name": [{"service":  "UserService"}],
+      "retryPolicy": {
+        "maxAttempts": 4,
+        "initialBackoff": "0.01s",
+        "maxBackoff": "0.1s",
+        "backoffMultiplier": 2.0,
+        "retryableStatusCodes": ["UNAVAILABLE"]
+      }
+    }
+  ]
+}`
 
 	// 创建Etcd解析器
 	etcdResolver, err := resolver.NewBuilder(s.cli)
