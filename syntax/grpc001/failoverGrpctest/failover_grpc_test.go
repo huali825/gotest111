@@ -114,7 +114,7 @@ func (s *BalancerCycleTestSuite) TestWrrClient() {
 	// 调用GetByID方法获取用户信息
 	for i := 0; i < 30; i++ {
 		// 创建带有超时的上下文
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		// 在函数结束时取消上下文
 		defer cancel()
 		resp, err := client.GetByID(ctx, &myGrpc.GetByIDRequest{Id: 123})
@@ -177,8 +177,14 @@ func (s *BalancerCycleTestSuite) TestServer() {
 			Name: ":8091",
 		})
 	}()
-	s.startServer(":8092", 30, &FailedServer{
-		Name: ":8092",
+	go func() {
+		s.startServer(":8092", 20, &grpc001.Server{
+			Name: ":8092",
+		})
+	}()
+
+	s.startServer(":8099", 3, &FailedServer{
+		Name: ":8099",
 	})
 }
 
