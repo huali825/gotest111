@@ -29,24 +29,31 @@ func init() {
 type PickerBuilderStck struct {
 }
 
+// Build 是一个用于构建 Picker 的结构体
 func (p *PickerBuilderStck) Build(info base.PickerBuildInfo) balancer.Picker {
+	// 创建一个切片用于存储 weightConn 结构体，初始容量为 info.ReadySCs 的长度
 	conns := make([]*weightConn, 0, len(info.ReadySCs))
+	// 遍历 info.ReadySCs 中的每一个 SubConn 及其相关信息
 	for sc, sci := range info.ReadySCs {
-
-		//test 2024年12月11日12:02:45
+		// 获取地址的元数据，并将其转换为 map[string]any 类型
 		md := sci.Address.Metadata.(map[string]any) //获取地址的元数据
+		// 从元数据中获取 "weight" 键对应的值，并忽略错误
 		weightVal, _ := md["weight"]
+		// 将获取到的权重值转换为 float64 类型
 		weight := weightVal.(float64)
 
+		// 打印元数据，用于调试
 		fmt.Println(md)
 
+		// 将 weightConn 结构体添加到 conns 切片中
 		conns = append(conns, &weightConn{
-			weight:        int(weight),
-			currentWeight: int(weight),
-			SubConn:       sc,
+			weight:        int(weight), // 设置初始权重
+			currentWeight: int(weight), // 设置当前权重
+			SubConn:       sc,          // 设置子连接
 		})
 	}
 
+	// 返回一个新的 PickerStck 结构体，其中包含构建好的 conns 切片
 	return &PickerStck{
 		conns: conns,
 	}
