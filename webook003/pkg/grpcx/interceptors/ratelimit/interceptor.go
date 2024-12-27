@@ -83,7 +83,7 @@ func (b *InterceptorBuilder) BuildClientInterceptor() grpc.UnaryClientIntercepto
 	}
 }
 
-// 服务级别限流
+// BuildServerInterceptorService 针对grpc 的server 的包含/UserService 字段的请求限流 // 服务级别限流
 func (b *InterceptorBuilder) BuildServerInterceptorService() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any,
 		info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
