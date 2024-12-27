@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"log"
 	"testing"
 )
 
@@ -23,4 +24,44 @@ func TestClient(t *testing.T) {
 	require.NoError(t, err)
 	// 打印返回结果
 	t.Log(resp.User)
+}
+
+// 测试客户端 限流
+func TestClient02(t *testing.T) {
+	// 连接服务器
+	//cc, err := grpc.Dial("localhost:8090", grpc.WithInsecure())
+	cc, err := grpc.NewClient("localhost:8090",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithChainUnaryInterceptor(clientFirst, clientSecond))
+	require.NoError(t, err)
+
+	// 创建客户端
+	client := NewUserServiceClient(cc)
+	// 调用客户端方法
+	resp, err := client.GetByID(context.Background(), &GetByIDRequest{Id: 123})
+	require.NoError(t, err)
+	// 打印返回结果
+	t.Log(resp.User)
+}
+
+// clientFirst 限流拦截器1
+var clientFirst grpc.UnaryClientInterceptor = func(ctx context.Context,
+	method string, req, reply any,
+	cc *grpc.ClientConn, invoker grpc.UnaryInvoker,
+	opts ...grpc.CallOption) error {
+	log.Println("before call")
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	log.Println("after call")
+	return err
+}
+
+// clientSecond 限流拦截器2
+var clientSecond grpc.UnaryClientInterceptor = func(ctx context.Context,
+	method string, req, reply any,
+	cc *grpc.ClientConn, invoker grpc.UnaryInvoker,
+	opts ...grpc.CallOption) error {
+	log.Println("before call2")
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	log.Println("after call2")
+	return err
 }
