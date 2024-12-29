@@ -1,5 +1,13 @@
 package grpcInterceptor
 
+/*
+ * @Date: 2024年12月27日
+ * @LastEditors: TMH
+ * @LastEditTime: 2024年12月29日12:51:27
+ * @FilePath: syntax/002grpcInterceptor/interceptor.go
+ * @Description: grpc.UnaryServerInterceptor Server 拦截器  针对特定方法限流, 耦合性强 不通用
+ */
+
 import (
 	"context"
 	"fmt"
