@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"goworkwebook/syntax/002grpcInterceptor/protobufInterface/v1"
 	"net"
 	"testing"
 	"time"
@@ -33,7 +34,7 @@ func (s *InterceptorTestSuite) TestClient() {
 			BuildUnaryClientInterceptor()),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	client := NewUserServiceClient(cc)
+	client := PtbfItfcv1.NewUserServiceClient(cc)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	//md, ok := metadata.FromIncomingContext(ctx)
@@ -42,7 +43,7 @@ func (s *InterceptorTestSuite) TestClient() {
 	//}
 	//md.Set("app", "test_client")
 	time.Sleep(time.Millisecond * 100)
-	resp, err := client.GetByID(ctx, &GetByIDRequest{Id: 123})
+	resp, err := client.GetByID(ctx, &PtbfItfcv1.GetByIDRequest{Id: 123})
 	require.NoError(t, err)
 	t.Log(resp.User)
 	time.Sleep(time.Second)
@@ -55,7 +56,7 @@ func (s *InterceptorTestSuite) TestServer() {
 		grpc.ChainUnaryInterceptor(NewLogInterceptor(t),
 			trace.NewOTELInterceptorBuilder("server_test", nil, nil).
 				BuildUnaryServerInterceptor()))
-	RegisterUserServiceServer(server, &Server{
+	PtbfItfcv1.RegisterUserServiceServer(server, &Server{
 		Name: "interceptor_test",
 	})
 

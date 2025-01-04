@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"goworkwebook/syntax/002grpcInterceptor/protobufInterface/v1"
 	loggerI "goworkwebook/webook003/pkg/grpcx/interceptors/logger"
 	"goworkwebook/webook003/pkg/logger"
 	"log"
@@ -26,7 +27,7 @@ func TestServer(t *testing.T) {
 		server.GracefulStop()
 	}()
 	userServer := &Server{}
-	RegisterUserServiceServer(server, userServer)
+	PtbfItfcv1.RegisterUserServiceServer(server, userServer)
 
 	//l, err := net.Listen("tcp", ":8090")
 	l, err := net.Listen("tcp", "127.0.0.1:8090")

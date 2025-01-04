@@ -4,7 +4,7 @@
 // - protoc             v5.27.3
 // source: user.proto
 
-package grpcInterceptor
+package PtbfItfcv1
 
 import (
 	context "context"

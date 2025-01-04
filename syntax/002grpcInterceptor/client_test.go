@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"goworkwebook/syntax/002grpcInterceptor/protobufInterface/v1"
 	"log"
 	"testing"
 )
@@ -26,9 +27,9 @@ func TestClient(t *testing.T) {
 	//cc, err := grpc.Dial("localhost:8090", grpc.WithInsecure())
 	require.NoError(t, err)
 	// 创建客户端
-	client := NewUserServiceClient(cc)
+	client := PtbfItfcv1.NewUserServiceClient(cc)
 	// 调用客户端方法
-	resp, err := client.GetByID(context.Background(), &GetByIDRequest{Id: 123})
+	resp, err := client.GetByID(context.Background(), &PtbfItfcv1.GetByIDRequest{Id: 123})
 	require.NoError(t, err)
 	// 打印返回结果
 	t.Log(resp.User)
@@ -44,9 +45,9 @@ func TestClient02(t *testing.T) {
 	require.NoError(t, err)
 
 	// 创建客户端
-	client := NewUserServiceClient(cc)
+	client := PtbfItfcv1.NewUserServiceClient(cc)
 	// 调用客户端方法
-	resp, err := client.GetByID(context.Background(), &GetByIDRequest{Id: 123})
+	resp, err := client.GetByID(context.Background(), &PtbfItfcv1.GetByIDRequest{Id: 123})
 	require.NoError(t, err)
 	// 打印返回结果
 	t.Log(resp.User)

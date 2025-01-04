@@ -11,6 +11,7 @@ package grpcInterceptor
 import (
 	"context"
 	"fmt"
+	"goworkwebook/syntax/002grpcInterceptor/protobufInterface/v1"
 	"goworkwebook/webook003/pkg/logger"
 
 	"google.golang.org/grpc"
@@ -34,7 +35,7 @@ func (b *InterceptorBuilder) BuildServerInterceptorServiceBiz() grpc.UnaryServer
 	return func(ctx context.Context, req any,
 		info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 
-		if idReq, ok := req.(*GetByIDRequest); ok {
+		if idReq, ok := req.(*PtbfItfcv1.GetByIDRequest); ok {
 			limited, err := b.limiter.Limit(ctx,
 				// limiter:user:456
 				fmt.Sprintf("limiter:user:%s:%d", info.FullMethod, idReq.Id))

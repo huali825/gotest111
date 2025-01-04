@@ -40,13 +40,19 @@ func (b *Builder) PeerIP(ctx context.Context) string {
 	return ""
 }
 
+// grpcHeaderValue 从传入的上下文中获取gRPC请求头中的指定键的值
 func (b *Builder) grpcHeaderValue(ctx context.Context, key string) string {
+	// 检查传入的键是否为空，如果为空则直接返回空字符串
 	if key == "" {
 		return ""
 	}
+
+	// 从上下文中提取元数据（metadata），如果提取失败则返回空字符串
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return ""
 	}
+
+	// 从元数据中获取指定键的值，并将多个值用分号（;）连接成一个字符串返回
 	return strings.Join(md.Get(key), ";")
 }
